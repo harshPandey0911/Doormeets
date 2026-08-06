@@ -116,6 +116,7 @@ const createBooking = async (req, res) => {
 
     // --- VENDOR SEARCH LOGIC ---
     const { findNearbyVendors, geocodeAddress } = require('../../services/locationService');
+    const { findZoneByLocation } = require('../../services/zoneService');
     let nearbyVendors = [];
 
     // Determine booking location (prioritize frontend coordinates)
@@ -128,21 +129,54 @@ const createBooking = async (req, res) => {
       );
     }
 
+    // STEP 1: Resolve the booking's zone FIRST, directly from its coordinates. This is the
+    // single source of truth used for every vendor match below — we deliberately do not
+    // trust a client-supplied zoneId, the server derives it independently from the address
+    // so it can never be spoofed or stale.
+    let resolvedBookingZone = null;
+    if (bookingLocation && typeof bookingLocation.lat === 'number' && typeof bookingLocation.lng === 'number') {
+      resolvedBookingZone = await findZoneByLocation(bookingLocation.lat, bookingLocation.lng);
+    }
+    if (resolvedBookingZone) {
+      console.log(`[CreateBooking] Resolved booking zone: ${resolvedBookingZone.name} (${resolvedBookingZone._id})`);
+    } else {
+      console.warn('[CreateBooking] Could not resolve a zone for this booking address. Booking will require manual admin assignment.');
+    }
+
     if (vendorId) {
       // DIRECT BOOKING: User picked a specific vendor
       console.log(`[CreateBooking] Direct booking for vendorId: ${vendorId}`);
-      const targetVendor = await Vendor.findById(vendorId).select('name businessName phone address isOnline availability approvalStatus isActive geoLocation settings');
-      
+      const targetVendor = await Vendor.findById(vendorId).select('name businessName phone address isOnline availability approvalStatus isActive geoLocation settings zoneId zoneIds');
+
       if (!targetVendor) {
         return res.status(404).json({ success: false, message: 'The selected vendor was not found.' });
       }
 
       // Check if vendor is online/available
       if (!targetVendor.isOnline || targetVendor.availability === 'OFFLINE') {
-        return res.status(400).json({ 
-          success: false, 
-          message: `${targetVendor.businessName || targetVendor.name} is currently offline. Please try another vendor or book later.` 
+        return res.status(400).json({
+          success: false,
+          message: `${targetVendor.businessName || targetVendor.name} is currently offline. Please try another vendor or book later.`
         });
+      }
+
+      // Zone guard: a vendor scoped to Zone A must never receive a direct booking whose
+      // service location resolves to Zone B, even if the client supplied that vendorId
+      // directly (e.g. via a stale cart or a vendor-linked brand/service). Vendors with no
+      // zone assigned at all are legacy/unscoped and are allowed through unchanged.
+      const vendorHasZoneScope = !!targetVendor.zoneId || (Array.isArray(targetVendor.zoneIds) && targetVendor.zoneIds.length > 0);
+      if (vendorHasZoneScope) {
+        const vendorZoneIds = new Set([
+          ...(targetVendor.zoneId ? [targetVendor.zoneId.toString()] : []),
+          ...((targetVendor.zoneIds || []).map(z => z.toString()))
+        ]);
+
+        if (!resolvedBookingZone || !vendorZoneIds.has(resolvedBookingZone._id.toString())) {
+          return res.status(400).json({
+            success: false,
+            message: `${targetVendor.businessName || targetVendor.name} does not serve this location. Please choose a vendor available in your zone.`
+          });
+        }
       }
 
       // If online, they are the only target
@@ -150,11 +184,13 @@ const createBooking = async (req, res) => {
       vendorObj.distance = 0; // Dist is not critical for direct booking
       nearbyVendors = [vendorObj];
     } else {
-      // Find vendors who offer the category of this service
+      // STEP 2: Zone-first auto-match. If the booking's zone couldn't be resolved at all,
+      // there is nothing safe to search — skip straight to an empty result so the booking
+      // is routed to admin below, rather than guessing via a city-wide vendor pool.
       let qualifiedVendorIds = [];
       const searchCategoryTitle = category ? category.title : (reqServiceCategory || service.category);
-      
-      if (category || searchCategoryTitle) {
+
+      if (resolvedBookingZone && (category || searchCategoryTitle)) {
         const searchArray = [];
         if (searchCategoryTitle) {
           searchArray.push(new RegExp(`^${searchCategoryTitle.trim()}$`, 'i'));
@@ -170,31 +206,25 @@ const createBooking = async (req, res) => {
             searchArray.push(gc._id.toString());
           });
         }
-        
+
         const categoryMatchConditions = [
           { categories: { $in: searchArray } },
           { service: { $in: searchArray } }
         ];
 
-        // Filter vendors by Zone (if targetZoneId resolved or passed)
-        const targetZoneId = zoneId || req.body.zoneId || null;
+        // Vendors must be assigned to the booking's resolved zone — not optional.
         const zoneMatchConditions = [
-          { zoneId: targetZoneId },
-          { zoneIds: targetZoneId },
-          { zoneId: { $exists: false } },
-          { zoneId: null }
+          { zoneId: resolvedBookingZone._id },
+          { zoneIds: resolvedBookingZone._id }
         ];
 
         const vendorQuery = {
           isActive: true,
           $and: [
-            { $or: categoryMatchConditions }
+            { $or: categoryMatchConditions },
+            { $or: zoneMatchConditions }
           ]
         };
-
-        if (targetZoneId) {
-          vendorQuery.$and.push({ $or: zoneMatchConditions });
-        }
 
         if (isConsultation) {
           vendorQuery.isConsultant = true;
@@ -237,16 +267,20 @@ const createBooking = async (req, res) => {
         }
 
         const matchingVendors = await Vendor.find(vendorQuery).select('_id').lean();
-        
+
         qualifiedVendorIds = Array.from(new Set(matchingVendors.map(v => v._id.toString())));
       }
 
-      console.log(`[CreateBooking] Found ${qualifiedVendorIds.length} vendors offering category "${category ? category.title : 'Unknown'}" globally.`);
+      console.log(`[CreateBooking] Found ${qualifiedVendorIds.length} vendors offering category "${category ? category.title : 'Unknown'}" in zone "${resolvedBookingZone ? resolvedBookingZone.name : 'unresolved'}".`);
 
       if (qualifiedVendorIds.length === 0) {
+        // No vendor exists in this zone for this category (or the zone couldn't be
+        // resolved) — this booking must go to admin for manual reassignment, never to a
+        // vendor outside the customer's zone.
         nearbyVendors = [];
       } else {
-        // Find qualified vendors who are nearby
+        // Re-confirm zone + availability/conflict rules on the qualified set (defense in
+        // depth — findNearbyVendors independently re-derives the zone from bookingLocation).
         const vendorFilters = {
           _id: { $in: qualifiedVendorIds },
           checkCashLimit: paymentMethod === 'cash',
@@ -256,13 +290,16 @@ const createBooking = async (req, res) => {
           minWalletBalance: category?.minWalletBalance || 0
         };
 
-        console.log(`[CreateBooking] Searching for ${qualifiedVendorIds.length} specific vendors near user location...`);
+        console.log(`[CreateBooking] Searching for ${qualifiedVendorIds.length} specific vendors in zone...`);
         nearbyVendors = await findNearbyVendors(bookingLocation, 10, vendorFilters);
-        console.log(`[CreateBooking] Found ${nearbyVendors.length} qualified vendors within 10km.`);
+        console.log(`[CreateBooking] Found ${nearbyVendors.length} qualified vendors in the resolved zone.`);
       }
     }
 
     console.log(`[CreateBooking] Targeting ${nearbyVendors.length} vendors for this booking`);
+    // If no vendor is available in the customer's own zone, the booking is routed to admin
+    // (bookingStatus 'pending_admin' below) instead of matching a vendor from a different
+    // zone. Admin can then manually reassign any vendor via the existing admin queue.
     // --- END VENDOR SEARCH BLOCK ---
 
     // Calculate pricing - use amount from frontend if provided, otherwise calculate

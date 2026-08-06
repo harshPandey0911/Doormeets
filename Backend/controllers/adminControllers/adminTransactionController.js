@@ -373,7 +373,10 @@ const getTransactionStats = async (req, res) => {
         const gstPct = pricing ? Number(pricing.gstPercentage ?? 18) : 18;
         const vSgstPct = pricing ? Number(pricing.vendorSgstPercentage ?? 2.5) : 2.5;
         const vCgstPct = pricing ? Number(pricing.vendorCgstPercentage ?? 2.5) : 2.5;
-        const pCommPct = pricing ? Number(pricing.commissionPercentage ?? 25) : 25;
+        // platformCommission is the field real bookings are actually settled against in
+        // services/commissionService.js — read the same one here so this report can't
+        // disagree with the money that was actually moved.
+        const pCommPct = pricing ? Number(pricing.platformCommission ?? 0) : 0;
 
         if (vPayoutBase === 0 && booking.vendorShare > 0) {
            const deductionMultiplier = 1 - ((pCommPct + vSgstPct + vCgstPct) / 100);
@@ -445,11 +448,21 @@ const getEarningsBreakdown = async (req, res) => {
     }
 
     const bookings = await Booking.find(bookingQuery)
-      .select('bookingNumber createdAt userId vendorId finalAmount basePrice serviceId cityId brandId completedAt updatedAt serviceName serviceCategory vendorShare adminCommission')
+      .select('bookingNumber createdAt userId vendorId finalAmount basePrice serviceId cityId brandId completedAt updatedAt serviceName serviceCategory vendorShare adminCommission vendorBillId')
       .populate('userId', 'name email phone')
-      .populate('vendorId', 'name email phone businessName level')
+      .populate('vendorId', 'name email phone businessName level currentLevel')
       .sort({ createdAt: -1 })
       .lean();
+
+    // Batch-load VendorBills for bookings that have one (i.e. the vendor added on-site
+    // services/parts). A bill is the authoritative, already-cascaded breakdown for that
+    // booking — including add-ons — so it's preferred over recomputing from PricingConfig
+    // alone, which has no idea an add-on was ever added.
+    const VendorBill = require('../../models/VendorBill');
+    const billIds = bookings.map(b => b.vendorBillId).filter(Boolean);
+    const bills = billIds.length > 0 ? await VendorBill.find({ _id: { $in: billIds } }).lean() : [];
+    const billMap = {};
+    bills.forEach(b => { billMap[b._id.toString()] = b; });
 
     // 2. Fetch Settings for dynamic Level Names & PricingConfigs in batch
     const Settings = require('../../models/Settings');
@@ -473,6 +486,64 @@ const getEarningsBreakdown = async (req, res) => {
     const breakdownData = [];
 
     bookings.forEach(booking => {
+      // Bill-based path: an add-on (extra service or part) was added on site. The bill already
+      // settled every line — original service AND every add-on — through the full cascade, so
+      // use it directly instead of recomputing from a single PricingConfig row that has no idea
+      // an add-on exists.
+      const bill = booking.vendorBillId ? billMap[booking.vendorBillId.toString()] : null;
+      if (bill) {
+        const row = {
+          _id: booking._id,
+          bookingId: booking._id,
+          bookingNumber: booking.bookingNumber,
+          createdAt: booking.completedAt || booking.updatedAt || booking.createdAt,
+          user: booking.userId,
+          vendor: booking.vendorId,
+          serviceName: booking.serviceName || 'General Service',
+          serviceCategory: booking.serviceCategory || 'Service',
+          customerPay: bill.grandTotal,
+          vendorPayoutBase: parseFloat(((bill.vendorServiceEarning || 0) + (bill.vendorServiceSgst || 0) + (bill.vendorServiceCgst || 0) + (bill.platformCommissionAmount || 0) + (bill.levelCommissionAmount || 0)).toFixed(2)),
+          adminGrossShare: bill.adminMarginGross || 0,
+          adminTaxableEarning: bill.adminMarginNet || 0,
+
+          // Taxes
+          platformGstAmount: bill.adminMarginGst || 0,
+          vendorSgstAmount: bill.vendorServiceSgst || 0,
+          vendorCgstAmount: bill.vendorServiceCgst || 0,
+          totalGstCalculated: parseFloat(((bill.adminMarginGst || 0) + (bill.vendorServiceSgst || 0) + (bill.vendorServiceCgst || 0) + (bill.partsGST || 0)).toFixed(2)),
+
+          // Commissions
+          platformCommissionAmount: bill.platformCommissionAmount || 0,
+          levelCommissionAmount: bill.levelCommissionAmount || 0,
+          totalCommissionEarned: parseFloat(((bill.platformCommissionAmount || 0) + (bill.levelCommissionAmount || 0)).toFixed(2)),
+          netVendorPayout: bill.vendorTotalEarning || 0,
+          vendorLevel: (() => {
+            const raw = booking.vendorId ? (booking.vendorId.currentLevel || booking.vendorId.level || 'L3') : 'L3';
+            const str = String(raw).toUpperCase();
+            if (str.includes('2')) return l2Name;
+            if (str.includes('3')) return l3Name;
+            return l1Name;
+          })(),
+
+          // Add-on breakdown — the specific numbers this report didn't show before: what was
+          // originally booked vs what got added on site, and the total vendor+admin profit.
+          hasAddon: true,
+          totalServiceCharge: bill.totalServiceCharge || 0,
+          totalAddonCharge: bill.totalAddonCharge || 0,
+          vendorProfit: bill.vendorTotalEarning || 0,
+          adminProfit: bill.adminMarginNet || 0
+        };
+
+        if (taxType && taxType !== 'all') {
+          if (taxType === 'gst' && row.platformGstAmount <= 0) return;
+          if (taxType === 'cgst' && row.vendorCgstAmount <= 0) return;
+          if (taxType === 'sgst' && row.vendorSgstAmount <= 0) return;
+        }
+
+        breakdownData.push(row);
+        return;
+      }
+
       const sId = booking.serviceId ? booking.serviceId.toString() : '';
       const list = pricingMap[sId] || [];
       let pricing = null;
@@ -495,15 +566,20 @@ const getEarningsBreakdown = async (req, res) => {
       const gstPct = pricing ? Number(pricing.gstPercentage ?? 18) : 18;
       const vSgstPct = pricing ? Number(pricing.vendorSgstPercentage ?? 2.5) : 2.5;
       const vCgstPct = pricing ? Number(pricing.vendorCgstPercentage ?? 2.5) : 2.5;
-      const pCommPct = pricing ? Number(pricing.commissionPercentage ?? 25) : 25;
-      
-      // Determine level commission based on vendor level (L1/L2/L3)
+      // platformCommission is the field real bookings are actually settled against in
+      // services/commissionService.js — read the same one here so this report can't
+      // disagree with the money that was actually moved.
+      const pCommPct = pricing ? Number(pricing.platformCommission ?? 0) : 0;
+
+      // Determine level commission based on vendor level (L1/L2/L3). currentLevel is the
+      // field commissionService.js actually reads at booking completion — `level` is a
+      // different (training) field and would silently pick the wrong commission tier.
       let lCommPct = 0;
       if (booking.vendorId) {
-        const level = booking.vendorId.level || 'L1';
-        if (level === 'L1') lCommPct = pricing ? Number(pricing.l1Commission ?? 0) : 0;
-        else if (level === 'L2') lCommPct = pricing ? Number(pricing.l2Commission ?? 0) : 0;
-        else if (level === 'L3') lCommPct = pricing ? Number(pricing.l3Commission ?? 0) : 0;
+        const vendorLevel = String(booking.vendorId.currentLevel || booking.vendorId.level || 'L3').toUpperCase();
+        if (vendorLevel === 'L1') lCommPct = pricing ? Number(pricing.l1Commission ?? 0) : 0;
+        else if (vendorLevel === 'L2') lCommPct = pricing ? Number(pricing.l2Commission ?? 0) : 0;
+        else lCommPct = pricing ? Number(pricing.l3Commission ?? 0) : 0;
       }
 
       if (vPayoutBase === 0 && booking.vendorShare > 0) {
@@ -518,11 +594,16 @@ const getEarningsBreakdown = async (req, res) => {
 
       const vendorSgstAmount = vPayoutBase * (vSgstPct / 100);
       const vendorCgstAmount = vPayoutBase * (vCgstPct / 100);
-      
+
       const platformCommissionAmount = vPayoutBase * (pCommPct / 100);
-      const levelCommissionAmount = vPayoutBase * (lCommPct / 100);
+      // Level commission is charged on what's left of the vendor's base AFTER sgst/cgst/
+      // platform commission are already taken out — same cascading order commissionService.js
+      // uses for the real payout. Computing it off the raw vPayoutBase (as before) understated
+      // the deduction and disagreed with what actually landed in the vendor's wallet.
+      const levelCommissionBasis = Math.max(0, vPayoutBase - vendorSgstAmount - vendorCgstAmount - platformCommissionAmount);
+      const levelCommissionAmount = levelCommissionBasis * (lCommPct / 100);
       const totalCommissionEarned = platformCommissionAmount + levelCommissionAmount;
-      const netVendorPayout = Math.max(0, vPayoutBase - vendorSgstAmount - vendorCgstAmount - totalCommissionEarned);
+      const netVendorPayout = Math.max(0, levelCommissionBasis - levelCommissionAmount);
 
       const totalGstCalculated = platformGstAmount + vendorSgstAmount + vendorCgstAmount;
 
@@ -557,7 +638,15 @@ const getEarningsBreakdown = async (req, res) => {
           if (str.includes('2') || str.includes('L2')) return l2Name;
           if (str.includes('3') || str.includes('L3')) return l3Name;
           return l1Name;
-        })()
+        })(),
+
+        // Same shape as the bill-based rows above, so the admin table doesn't need to branch —
+        // no add-on here, so the whole booking is "service charge" and nothing is "add-on".
+        hasAddon: false,
+        totalServiceCharge: cp,
+        totalAddonCharge: 0,
+        vendorProfit: netVendorPayout,
+        adminProfit: adminTaxableEarning
       };
 
       // Filter by taxType if specified

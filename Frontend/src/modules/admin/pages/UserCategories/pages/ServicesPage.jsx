@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { FiPlus, FiEdit2, FiTrash2, FiSliders, FiSave, FiX, FiChevronRight, FiChevronLeft, FiArrowUp, FiArrowDown, FiEye, FiEyeOff, FiUpload, FiCamera } from 'react-icons/fi';
 import { MdTimer, MdInventory, MdPhotoCamera, MdRepeat, MdDragHandle } from 'react-icons/md';
 import api from '../../../../../services/api';
+import { publicCatalogService } from '../../../../../services/catalogService';
 import { toast } from 'react-hot-toast';
 import { toAssetUrl } from '../utils';
 
@@ -888,17 +889,20 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const [pageBlocks, setPageBlocks] = useState([]);
   const [templates, setTemplates] = useState([]);
 
+  const [zones, setZones] = useState([]);
+
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [srvRes, subRes, catRes, tempRes, brndRes, settingsRes] = await Promise.all([
+      const [srvRes, subRes, catRes, tempRes, brndRes, zoneRes, settingsRes] = await Promise.all([
         api.get('/admin/services'),
         api.get('/admin/subcategories'),
         api.get('/admin/categories'),
         api.get('/admin/category-templates').catch(() => ({ data: { templates: [] } })),
         api.get('/admin/brands').catch(() => ({ data: { brands: [] } })),
+        api.get('/admin/zones').catch(() => ({ data: { zones: [] } })),
         api.get('/admin/settings').catch(() => null)
       ]);
       setServices(srvRes.data.services || []);
@@ -906,6 +910,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       setCategories(catRes.data.categories || catRes.data.data || []);
       setTemplates(tempRes.data?.templates || tempRes.data?.data || []);
       setBrands(brndRes.data?.brands || brndRes.data?.data || []);
+      setZones(zoneRes.data?.zones || zoneRes.data?.data || []);
       if (settingsRes?.data?.success) {
         setGlobalSettings(settingsRes.data.settings);
       }
@@ -1253,6 +1258,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         _tempId: config._tempId || null,
         _id: config._id || null,
         cityId: config.cityId?._id || config.cityId || '',
+        zoneId: config.zoneId?._id || config.zoneId || '',
         brandId: config.brandId?._id || config.brandId || '',
         variantId: config.variantId?._id || config.variantId || '',
         subCategoryId: config.subCategoryId?._id || config.subCategoryId || '',
@@ -1280,6 +1286,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       setEditingPricingConfigIdx(null);
       setPricingForm({
         cityId: selectedCity || '',
+        zoneId: '',
         brandId: '',
         variantId: '',
         subCategoryId: '',
@@ -1317,53 +1324,53 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
     const l2Pct = Number(globalSettings?.commissionRates?.level2 ?? 0);
     const l3Pct = Number(globalSettings?.commissionRates?.level3 ?? 0);
 
-    const vPayoutBase = Number(pricingForm.vendorPayoutBase) || 0;
+    const vPayoutBase = Math.round(Number(pricingForm.vendorPayoutBase) || 0);
     const vSgstPct = Number(globalSettings?.vendorSgstPercentage ?? 2.5);
     const vCgstPct = Number(globalSettings?.vendorCgstPercentage ?? 2.5);
     const vTdsPct = 0; // TDS is removed entirely u/s request "Vendor TDS (%) hatao"
 
     // 1. Vendor Payout Breakdown
-    const sgstAmount = vPayoutBase * (vSgstPct / 100);
-    const cgstAmount = vPayoutBase * (vCgstPct / 100);
-    const tdsAmount = vPayoutBase * (vTdsPct / 100);
+    const sgstAmount = Math.round(vPayoutBase * (vSgstPct / 100));
+    const cgstAmount = Math.round(vPayoutBase * (vCgstPct / 100));
+    const tdsAmount = Math.round(vPayoutBase * (vTdsPct / 100));
     
     // Remaining Base after taxes & TDS
-    const remainingBase = Math.max(0, vPayoutBase - sgstAmount - cgstAmount - tdsAmount);
+    const remainingBase = Math.max(0, Math.round(vPayoutBase - sgstAmount - cgstAmount - tdsAmount));
     
     // Platform Commission is deducted from remainingBase using Platform Commission (%) from settings
-    const platformCommissionAmount = remainingBase * (pCommPct / 100);
-    const netVendorShare = Math.max(0, remainingBase - platformCommissionAmount);
+    const platformCommissionAmount = Math.round(remainingBase * (pCommPct / 100));
+    const netVendorShare = Math.max(0, Math.round(remainingBase - platformCommissionAmount));
 
     // 2. Admin/Company Gross Margin (includes platform commission)
-    const customerShareMargin = Math.max(0, cp - vPayoutBase);
-    const marginGstAmount = customerShareMargin * (gstPct / 100);
+    const customerShareMargin = Math.max(0, Math.round(cp - vPayoutBase));
+    const marginGstAmount = Math.round(customerShareMargin * (gstPct / 100));
     const marginTaxableBase = customerShareMargin - marginGstAmount;
 
     const adminGrossMargin = customerShareMargin + platformCommissionAmount;
     const adminTaxableBase = marginTaxableBase + platformCommissionAmount;
     const adminGstAmount = marginGstAmount;
 
-    const l1CommAmount = remainingBase * (l1Pct / 100);
-    const l2CommAmount = remainingBase * (l2Pct / 100);
-    const l3CommAmount = remainingBase * (l3Pct / 100);
-    const payoutL1 = Math.max(0, remainingBase - platformCommissionAmount - l1CommAmount);
-    const payoutL2 = Math.max(0, remainingBase - platformCommissionAmount - l2CommAmount);
-    const payoutL3 = Math.max(0, remainingBase - platformCommissionAmount - l3CommAmount);
-    const profitL1 = marginTaxableBase + platformCommissionAmount + l1CommAmount;
-    const profitL2 = marginTaxableBase + platformCommissionAmount + l2CommAmount;
-    const profitL3 = marginTaxableBase + platformCommissionAmount + l3CommAmount;
+    const l1CommAmount = Math.round(remainingBase * (l1Pct / 100));
+    const l2CommAmount = Math.round(remainingBase * (l2Pct / 100));
+    const l3CommAmount = Math.round(remainingBase * (l3Pct / 100));
+    const payoutL1 = Math.max(0, Math.round(remainingBase - platformCommissionAmount - l1CommAmount));
+    const payoutL2 = Math.max(0, Math.round(remainingBase - platformCommissionAmount - l2CommAmount));
+    const payoutL3 = Math.max(0, Math.round(remainingBase - platformCommissionAmount - l3CommAmount));
+    const profitL1 = Math.round(marginTaxableBase + platformCommissionAmount + l1CommAmount);
+    const profitL2 = Math.round(marginTaxableBase + platformCommissionAmount + l2CommAmount);
+    const profitL3 = Math.round(marginTaxableBase + platformCommissionAmount + l3CommAmount);
 
     return {
-      taxableAmount: adminTaxableBase + remainingBase,
-      gstAmount: adminGstAmount + sgstAmount + cgstAmount,
-      cgstAmount: (adminGstAmount / 2) + cgstAmount,
-      sgstAmount: (adminGstAmount / 2) + sgstAmount,
+      taxableAmount: Math.round(adminTaxableBase + remainingBase),
+      gstAmount: Math.round(adminGstAmount + sgstAmount + cgstAmount),
+      cgstAmount: Math.round((adminGstAmount / 2) + cgstAmount),
+      sgstAmount: Math.round((adminGstAmount / 2) + sgstAmount),
       platformCommissionAmount,
       vendorShare: netVendorShare,
       l1CommAmount, l2CommAmount, l3CommAmount, payoutL1, payoutL2, payoutL3,
-      profitL1, profitL2, profitL3, totalCustomerPay: cp, platformTaxableBase: adminTaxableBase, vendorTaxableBase: remainingBase,
-      adminGrossMargin, adminTaxableBase, adminGstAmount, tdsAmount, remainingBase,
-      marginTaxableBase
+      profitL1, profitL2, profitL3, totalCustomerPay: cp, platformTaxableBase: Math.round(adminTaxableBase), vendorTaxableBase: Math.round(remainingBase),
+      adminGrossMargin: Math.round(adminGrossMargin), adminTaxableBase: Math.round(adminTaxableBase), adminGstAmount: Math.round(adminGstAmount), tdsAmount: Math.round(tdsAmount), remainingBase: Math.round(remainingBase),
+      marginTaxableBase: Math.round(marginTaxableBase)
     };
   };
 
@@ -1420,6 +1427,8 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       subCategoryId: pricingForm.subCategoryId || formData.subCategoryId || null,
       brandId: (selectedCategory?.enableBrands !== false && serviceType !== 'image_base' && pricingForm.brandId) ? pricingForm.brandId : null,
       cityId: pricingForm.cityId || null,
+      zoneId: pricingForm.zoneId || null,
+      zoneIds: Array.isArray(pricingForm.zoneIds) ? pricingForm.zoneIds : (pricingForm.zoneId ? [pricingForm.zoneId] : []),
       variantId: resolvedVariantId,
       customerPrice: Number(pricingForm.customerPrice || 0),
       originalPrice: Number(pricingForm.originalPrice || 0) || null,
@@ -1447,19 +1456,32 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       vendorAcceptanceFee: Number(pricingForm.vendorAcceptanceFee || 0)
     };
 
+    console.log('📌 [PricingSave] Preparing payload:', payload);
+    console.log('📌 [PricingSave] currentService:', currentService?._id, 'pricingForm._id:', pricingForm._id);
+
     if (currentService) {
       try {
+        let saveResponse;
         if (pricingForm._id) {
-          await api.put(`/admin/pricing/${pricingForm._id}`, { ...payload, serviceId: currentService._id });
+          console.log(`📌 [PricingSave] Sending PUT request to /api/admin/pricing/${pricingForm._id}`);
+          saveResponse = await api.put(`/admin/pricing/${pricingForm._id}`, { ...payload, serviceId: currentService._id });
         } else {
-          await api.post('/admin/pricing', { ...payload, serviceId: currentService._id });
+          console.log(`📌 [PricingSave] Sending POST request to /api/admin/pricing`);
+          saveResponse = await api.post('/admin/pricing', { ...payload, serviceId: currentService._id });
         }
+        console.log('✅ [PricingSave] Save successful response:', saveResponse.data);
+
         const prcRes = await api.get(`/admin/pricing?serviceId=${currentService._id}`);
+        console.log('✅ [PricingSave] Refetched pricing configs:', prcRes.data.data || prcRes.data.pricings);
         setPricingConfigs(prcRes.data.data || prcRes.data.pricings || []);
+        publicCatalogService.invalidateCache();
         setIsPricingModalOpen(false);
         setEditingPricingConfigIdx(null);
       } catch (err) {
-        alert(err.response?.data?.message || 'Error saving pricing configuration');
+        console.error('❌ [PricingSave] Error saving pricing config:', err);
+        console.error('❌ [PricingSave] Server response data:', err.response?.data);
+        const errorMsg = err.response?.data?.errors?.map(e => e.msg).join(', ') || err.response?.data?.message || 'Error saving pricing configuration';
+        alert(`Error: ${errorMsg}`);
       }
     } else {
       if (editingPricingConfigIdx !== null) {
@@ -1775,15 +1797,17 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                           </div>
                       {(() => {
                         const selectedCat = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
-                        if (!selectedCat || selectedCat.hasSubCategory === false) return null;
+                        const availableSubCategories = subCategories.filter(sub => !formData.categoryId || sub.categoryId?._id === formData.categoryId || sub.categoryId === formData.categoryId || sub.categoryId?.toString() === formData.categoryId?.toString());
+                        if (!selectedCat && availableSubCategories.length === 0) return null;
+                        if (availableSubCategories.length === 0) return null;
                         return (
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1">SubCategory</label>
                             <select className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-400"
                                 value={formData.subCategoryId} onChange={e => setFormData({ ...formData, subCategoryId: e.target.value })}>
                               <option value="">Select SubCategory</option>
-                              {subCategories.filter(sub => !formData.categoryId || sub.categoryId?._id === formData.categoryId || sub.categoryId === formData.categoryId).map(sub => (
-                                <option key={sub._id} value={sub._id}>{sub.title}</option>
+                              {availableSubCategories.map(sub => (
+                                <option key={sub._id || sub.id} value={sub._id || sub.id}>{sub.title}</option>
                               ))}
                             </select>
                           </div>
@@ -2898,6 +2922,48 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                   <div className="space-y-4">
                     <h4 className="text-base font-bold text-gray-800 mb-2 border-b pb-2">Step 5: Pricing Matrix</h4>
 
+                    {/* Missing Zone Pricing Alert */}
+                    {(() => {
+                      const selectedCat = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
+                      const catZoneIds = (selectedCat?.zoneIds || []).map(z => typeof z === 'object' ? (z._id || z.id) : String(z));
+                      if (catZoneIds.length === 0) return null;
+
+                      const configuredZoneIds = pricingConfigs
+                        .map(cfg => cfg.zoneId?._id || cfg.zoneId)
+                        .filter(Boolean)
+                        .map(String);
+
+                      const missingZoneIds = catZoneIds.filter(zId => !configuredZoneIds.includes(String(zId)));
+                      if (missingZoneIds.length === 0) return null;
+
+                      const missingZoneNames = zones
+                        .filter(z => missingZoneIds.includes(String(z._id || z.id)))
+                        .map(z => z.name);
+
+                      return (
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-amber-600 font-bold text-base">⚠️</span>
+                            <div>
+                              <p className="text-xs font-bold text-amber-800">
+                                {missingZoneIds.length} Assigned Zone(s) Pricing Pending!
+                              </p>
+                              <p className="text-[11px] text-amber-700">
+                                Category "{selectedCat?.title}" is active in {catZoneIds.length} zones. Missing price setup for: <span className="font-bold">{missingZoneNames.join(', ') || `${missingZoneIds.length} zone(s)`}</span>.
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenPricingForm()}
+                            className="px-2.5 py-1 bg-amber-600 text-white rounded text-xs font-bold hover:bg-amber-700 shrink-0"
+                          >
+                            + Add Zone Price
+                          </button>
+                        </div>
+                      );
+                    })()}
+
                     {/* Table showing configured prices */}
                     <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
                       <div className="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
@@ -2916,7 +2982,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                         <table className="w-full text-left border-collapse text-xs">
                           <thead>
                             <tr className="bg-gray-50/50 border-b border-gray-150">
-                              <th className="p-2.5 font-bold text-gray-600">City</th>
+                              <th className="p-2.5 font-bold text-gray-600">Zone / Region</th>
                               <th className="p-2.5 font-bold text-gray-600">Brand</th>
                               <th className="p-2.5 font-bold text-gray-600">Price Details</th>
                               <th className="p-2.5 font-bold text-gray-600">GST</th>
@@ -2927,6 +2993,9 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                           </thead>
                           <tbody>
                             {pricingConfigs.map((config, idx) => {
+                              const zoneName = config.zoneId
+                                ? (zones.find(z => (z._id || z.id) === (config.zoneId?._id || config.zoneId))?.name || config.zoneId?.name || 'Selected Zone')
+                                : 'Global (All Zones)';
                               const cityName = config.cityId 
                                 ? (cities.find(c => (c._id || c.id) === (config.cityId?._id || config.cityId))?.name || 'Selected City')
                                 : 'Global';
@@ -2954,16 +3023,16 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                 totalCustomerPay = platformFeeInclusive + vendorShareInclusive;
                               }
 
-                              const displayTaxable = gstInc ? cp - (cp * (gstPct / 100)) : cp;
-                              const displayPlatComm = displayTaxable * (pCommPct / 100);
-                              const profL1 = displayPlatComm + (displayTaxable * (l1Pct / 100));
-                              const profL2 = displayPlatComm + (displayTaxable * (l2Pct / 100));
-                              const profL3 = displayPlatComm + (displayTaxable * (l3Pct / 100));
+                              const displayTaxable = Math.round(gstInc ? cp - (cp * (gstPct / 100)) : cp);
+                              const displayPlatComm = Math.round(displayTaxable * (pCommPct / 100));
+                              const profL1 = Math.round(displayPlatComm + (displayTaxable * (l1Pct / 100)));
+                              const profL2 = Math.round(displayPlatComm + (displayTaxable * (l2Pct / 100)));
+                              const profL3 = Math.round(displayPlatComm + (displayTaxable * (l3Pct / 100)));
                               return (
                                 <tr key={config._tempId || config._id || idx} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                                   <td className="p-2.5">
-                                    <span className={`px-2 py-0.5 rounded font-bold ${config.cityId ? 'bg-indigo-50 text-indigo-700' : 'bg-green-50 text-green-700'}`}>
-                                      {cityName}
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${config.zoneId ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                                      {zoneName}
                                     </span>
                                   </td>
                                   <td className="p-2.5 font-semibold text-gray-700">
@@ -2978,7 +3047,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                     {isMinuteBased ? (
                                       <span>
                                         Base: ₹{config.customerPrice} ({config.minimumMinutes || 30} mins)
-                                        <span className="block text-[10px] text-emerald-600 font-bold mt-0.5">Total Pay: ₹{totalCustomerPay.toFixed(1)}</span>
+                                        <span className="block text-[10px] text-emerald-600 font-bold mt-0.5">Total Pay: ₹{Math.round(totalCustomerPay)}</span>
                                         <span className="block text-[10px] text-blue-600 font-normal mt-0.25">Extra: ₹{config.pricePerMinute}/10 min</span>
                                         <span className="block text-[10px] text-indigo-600 font-bold mt-0.5">Payout Base: ₹{config.vendorPayoutBase}</span>
                                         <span className="block text-[10px] text-indigo-500 font-normal mt-0.25">Payout Extra: ₹{config.vendorPayoutExtra}/10 min</span>
@@ -2992,14 +3061,14 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                     ) : (
                                       <span>
                                         ₹{config.customerPrice}
-                                        {!gstInc && <span className="block text-[10px] text-emerald-600 font-bold mt-0.5">Total Pay: ₹{totalCustomerPay.toFixed(1)}</span>}
+                                        {!gstInc && <span className="block text-[10px] text-emerald-600 font-bold mt-0.5">Total Pay: ₹{Math.round(totalCustomerPay)}</span>}
                                         <span className="block text-[10px] text-indigo-600 font-bold mt-0.5">Payout: ₹{config.vendorPayoutBase}</span>
                                       </span>
                                     )}
                                   </td>
                                   <td className="p-2.5 text-gray-500 font-semibold">{config.gstPercentage}% ({gstInc ? 'Incl.' : 'Excl.'})</td>
                                   <td className="p-2.5 bg-green-50 font-bold text-green-700">
-                                    ₹{profL1.toFixed(1)} / ₹{profL2.toFixed(1)} / ₹{profL3.toFixed(1)}
+                                    ₹{profL1} / ₹{profL2} / ₹{profL3}
                                   </td>
                                   <td className="p-2.5">
                                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${config.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -3039,26 +3108,107 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                         
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <div>
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">City Availability</label>
-                            <select
-                              className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none disabled:bg-gray-100 disabled:text-gray-500"
-                              value={pricingForm.cityId}
-                              onChange={e => setPricingForm({ ...pricingForm, cityId: e.target.value })}
-                              disabled={editingPricingConfigIdx !== null}
-                            >
-                              <option value="">All Cities (Global Pricing)</option>
-                              {cities.map(city => <option key={city._id || city.id} value={city._id || city.id}>{city.name}</option>)}
-                            </select>
+                            <label className="block text-[10px] font-bold text-blue-600 uppercase mb-1">📍 Zone Specificity</label>
+                            {(() => {
+                              const selectedCat = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
+                              const catZoneIds = (selectedCat?.zoneIds || []).map(z => typeof z === 'object' ? (z._id || z.id) : String(z));
+                              const allowedZones = catZoneIds.length > 0
+                                ? zones.filter(z => catZoneIds.includes(String(z._id || z.id)))
+                                : zones;
+
+                              const selectedZoneIds = Array.isArray(pricingForm.zoneIds) ? pricingForm.zoneIds : (pricingForm.zoneId ? [pricingForm.zoneId] : []);
+                              const isAllSelected = allowedZones.length > 0 && allowedZones.every(z => selectedZoneIds.includes(String(z._id || z.id)));
+
+                              const toggleZoneId = (zId) => {
+                                let updated = [...selectedZoneIds];
+                                if (updated.includes(zId)) {
+                                  updated = updated.filter(id => id !== zId);
+                                } else {
+                                  updated.push(zId);
+                                }
+                                setPricingForm({ ...pricingForm, zoneIds: updated, zoneId: updated[0] || '' });
+                              };
+
+                              const toggleSelectAll = () => {
+                                if (isAllSelected) {
+                                  setPricingForm({ ...pricingForm, zoneIds: [], zoneId: '' });
+                                } else {
+                                  const allIds = allowedZones.map(z => String(z._id || z.id));
+                                  setPricingForm({ ...pricingForm, zoneIds: allIds, zoneId: allIds[0] || '' });
+                                }
+                              };
+
+                              return (
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                                      Zone Specificity (Multi-Select Supported)
+                                    </label>
+                                    {allowedZones.length > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={toggleSelectAll}
+                                        className="text-[10px] font-bold text-violet-600 hover:underline"
+                                      >
+                                        {isAllSelected ? 'Deselect All' : 'Select All Zones'}
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {/* Single Select for Editing or Simple Select */}
+                                  {pricingForm._id ? (
+                                    <select
+                                      className="w-full p-2 border border-blue-300 bg-blue-50/50 rounded-lg text-xs font-semibold text-blue-900 outline-none"
+                                      value={pricingForm.zoneId || ''}
+                                      onChange={e => setPricingForm({ ...pricingForm, zoneId: e.target.value, zoneIds: e.target.value ? [e.target.value] : [] })}
+                                    >
+                                      <option value="">🌐 Global (Default Price for all Unconfigured Zones)</option>
+                                      {allowedZones.map(z => <option key={z._id || z.id} value={z._id || z.id}>📍 {z.name}</option>)}
+                                    </select>
+                                  ) : (
+                                    <div className="border border-blue-200 bg-blue-50/30 rounded-lg p-2 max-h-32 overflow-y-auto space-y-1.5">
+                                      <label className="flex items-center gap-2 text-xs font-bold text-blue-900 cursor-pointer pb-1 border-b border-blue-100">
+                                        <input
+                                          type="checkbox"
+                                          checked={selectedZoneIds.length === 0}
+                                          onChange={() => setPricingForm({ ...pricingForm, zoneIds: [], zoneId: '' })}
+                                          className="accent-blue-600"
+                                        />
+                                        <span>🌐 Global (Default Price for all Unconfigured Zones)</span>
+                                      </label>
+                                      {allowedZones.map(z => {
+                                        const zId = String(z._id || z.id);
+                                        const isChecked = selectedZoneIds.includes(zId);
+                                        return (
+                                          <label key={zId} className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer hover:bg-blue-100/50 p-1 rounded transition-colors">
+                                            <input
+                                              type="checkbox"
+                                              checked={isChecked}
+                                              onChange={() => toggleZoneId(zId)}
+                                              className="accent-violet-600"
+                                            />
+                                            <span>📍 {z.name}</span>
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+
+                                  <p className="text-[10px] text-gray-500 font-medium">
+                                    💡 Select <span className="font-bold text-blue-700">Global</span> for default price. Select one or multiple <span className="font-bold text-violet-700">Zones</span> to apply this price to specific regions at once.
+                                  </p>
+                                </div>
+                              );
+                            })()}
                           </div>
 
                           {isNormalService ? (
                             <div>
                               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Variant (Addon)</label>
                               <select
-                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-semibold text-violet-700 disabled:bg-gray-100 disabled:text-gray-500"
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-semibold text-violet-700"
                                 value={pricingForm.variantId}
                                 onChange={e => setPricingForm({ ...pricingForm, variantId: e.target.value })}
-                                disabled={editingPricingConfigIdx !== null}
                               >
                                 <option value="">-- Apply to Base Service --</option>
                                 {variants.map((v, vIdx) => (
@@ -3072,10 +3222,9 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                             <div>
                               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Subcategory</label>
                               <select
-                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-semibold text-blue-700 disabled:bg-gray-100 disabled:text-gray-500"
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-semibold text-blue-700"
                                 value={pricingForm.subCategoryId}
                                 onChange={e => setPricingForm({ ...pricingForm, subCategoryId: e.target.value })}
-                                disabled={editingPricingConfigIdx !== null}
                               >
                                 <option value="">-- Select Subcategory --</option>
                                 {subCategories.filter(sub => !formData.categoryId || sub.categoryId?._id === formData.categoryId || sub.categoryId === formData.categoryId).map(sub => (
@@ -3101,11 +3250,10 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                               <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Brand</label>
                                 <select
-                                  className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none disabled:bg-gray-100 disabled:text-gray-500"
+                                  className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
                                   value={pricingForm.brandId}
                                   onChange={e => setPricingForm({ ...pricingForm, brandId: e.target.value })}
                                   required={selectedCat?.brandRequired === true}
-                                  disabled={editingPricingConfigIdx !== null}
                                 >
                                   <option value="">Select Brand {selectedCat?.brandRequired ? '(Required)' : '(Optional)'}</option>
                                   {filteredBrands.map(brnd => <option key={brnd._id || brnd.id} value={brnd._id || brnd.id}>{brnd.title}</option>)}
@@ -3226,10 +3374,11 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                             <input
                               type="number"
                               min="0"
+                              step="1"
                               className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white font-bold text-indigo-800 outline-none focus:ring-2 focus:ring-indigo-400"
                               value={pricingForm.vendorPayoutBase === 0 ? '' : pricingForm.vendorPayoutBase}
                               onChange={e => {
-                                const val = parseFloat(e.target.value);
+                                const val = Math.round(parseFloat(e.target.value));
                                 setPricingForm({ ...pricingForm, vendorPayoutBase: isNaN(val) ? 0 : Math.max(0, val) });
                               }}
                               placeholder="e.g. 500"
@@ -3242,10 +3391,11 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                               <input
                                 type="number"
                                 min="0"
+                                step="1"
                                 className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white font-bold text-blue-800 outline-none focus:ring-2 focus:ring-blue-400"
                                 value={pricingForm.vendorPayoutExtra === 0 ? '' : pricingForm.vendorPayoutExtra}
                                 onChange={e => {
-                                  const val = parseFloat(e.target.value);
+                                  const val = Math.round(parseFloat(e.target.value));
                                   setPricingForm({ ...pricingForm, vendorPayoutExtra: isNaN(val) ? 0 : Math.max(0, val) });
                                 }}
                                 placeholder="e.g. 15"
@@ -3272,10 +3422,11 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                             <input
                               type="number"
                               min="0"
+                              step="1"
                               className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white font-bold text-red-700 outline-none focus:ring-2 focus:ring-red-400"
                               value={pricingForm.vendorAcceptanceFee === 0 ? '' : pricingForm.vendorAcceptanceFee}
                               onChange={e => {
-                                const val = parseFloat(e.target.value);
+                                const val = Math.round(parseFloat(e.target.value));
                                 setPricingForm({ ...pricingForm, vendorAcceptanceFee: isNaN(val) ? 0 : Math.max(0, val) });
                               }}
                               placeholder="e.g. 20"

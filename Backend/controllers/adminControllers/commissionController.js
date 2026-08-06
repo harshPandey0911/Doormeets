@@ -39,7 +39,13 @@ exports.getAdminCollectionSummary = async (req, res) => {
                 0
               ]
             }
-          }
+          },
+          // Platform's own margin GST liability and net profit-after-GST, on top of the raw
+          // commission figures above. Populated for bookings completed after this field was
+          // added — earlier bookings default to 0 here (see adminMarginGross note).
+          adminMarginGrossTotal: { $sum: '$adminMarginGross' },
+          adminMarginGstTotal: { $sum: '$adminMarginGst' },
+          adminMarginNetTotal: { $sum: '$adminMarginNet' }
         }
       }
     ]);
@@ -48,7 +54,10 @@ exports.getAdminCollectionSummary = async (req, res) => {
       cashCollection: 0,
       onlineCollection: 0,
       pendingCommission: 0,
-      receivedCommission: 0
+      receivedCommission: 0,
+      adminMarginGrossTotal: 0,
+      adminMarginGstTotal: 0,
+      adminMarginNetTotal: 0
     };
 
     res.status(200).json({
@@ -58,7 +67,14 @@ exports.getAdminCollectionSummary = async (req, res) => {
         onlineCollection: data.onlineCollection,
         totalCollection: data.cashCollection + data.onlineCollection,
         pendingCommission: data.pendingCommission,
-        receivedCommission: data.receivedCommission
+        receivedCommission: data.receivedCommission,
+        // Admin's margin (customerPrice - vendorPayoutBase) split out from its own GST
+        // liability — receivedCommission/pendingCommission above still include the
+        // SGST/CGST/level commission siphoned from the vendor's side; these three are the
+        // platform's own service-fee revenue and what it actually nets after GST.
+        adminMarginGross: data.adminMarginGrossTotal || 0,
+        adminMarginGst: data.adminMarginGstTotal || 0,
+        adminMarginNet: data.adminMarginNetTotal || 0
       }
     });
   } catch (error) {

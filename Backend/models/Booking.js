@@ -205,6 +205,24 @@ const bookingSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // Admin's raw margin (customerPrice - vendorPayoutBase) BEFORE the platform's own GST
+  // liability on that margin is deducted. This is distinct from adminCommission, which also
+  // folds in the SGST/CGST/commission siphoned from the vendor's side.
+  adminMarginGross: {
+    type: Number,
+    default: 0
+  },
+  // GST the platform owes on its own margin (adminMarginGross * gstPercentage).
+  adminMarginGst: {
+    type: Number,
+    default: 0
+  },
+  // What's actually left of the platform's margin after remitting its own GST — the figure
+  // shown to admin as their real per-booking profit.
+  adminMarginNet: {
+    type: Number,
+    default: 0
+  },
   vendorShare: {
     type: Number,
     default: 0

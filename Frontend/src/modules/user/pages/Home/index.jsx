@@ -445,10 +445,17 @@ const Home = () => {
           if (response.outsideZone) {
             setOutsideZone(true);
             setCategories([]);
-            // Try to get nearest zone info from localStorage (set during location selection)
-            const storedNearest = localStorage.getItem('nearest_zone_info');
-            if (storedNearest) {
-              try { setNearestZoneInfo(JSON.parse(storedNearest)); } catch (e) {}
+            // Prefer the distance the server just computed from this exact request's lat/lng —
+            // avoids a race with the separate GPS->geocode->zone-resolve chain that populates
+            // localStorage, which may not have finished (or run at all) by the time we get here.
+            if (response.nearestZone) {
+              setNearestZoneInfo(response.nearestZone);
+              localStorage.setItem('nearest_zone_info', JSON.stringify(response.nearestZone));
+            } else {
+              const storedNearest = localStorage.getItem('nearest_zone_info');
+              if (storedNearest) {
+                try { setNearestZoneInfo(JSON.parse(storedNearest)); } catch (e) {}
+              }
             }
             setLoading(false);
             return;

@@ -57,16 +57,8 @@ const CombinedCategoriesPage = ({ catalog, setCatalog, selectedCity, cities = []
 
   // Filtered standard categories for the modal checkbox list
   const selectableCategories = useMemo(() => {
-    return allStandardCategories.filter(c => {
-      // If the category is hidden from Home Categories, AND it's not mapped to any box,
-      // it means it was manually hidden by the admin. We hide it from this list.
-      // But if it is mapped to a box, its showOnHome is false automatically, so we still show it!
-      if (c.showOnHome === false && !allMappedCategoryIds.has(c.id)) {
-        return false;
-      }
-      return true;
-    });
-  }, [allStandardCategories, allMappedCategoryIds]);
+    return allStandardCategories.filter(c => c.status === 'active' || c.status === 'coming_soon');
+  }, [allStandardCategories]);
 
   // Fetch categories from API on mount
   const fetchCategories = async () => {
@@ -472,46 +464,7 @@ const CombinedCategoriesPage = ({ catalog, setCatalog, selectedCity, cities = []
             </div>
           </div>
 
-          <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
-            <label className="block text-sm font-bold text-gray-700 mb-2">🏙️ City Availability</label>
-            <div className="flex items-center gap-2 mb-2">
-              <input
-                id="allCitiesToggle"
-                type="checkbox"
-                checked={form.allCities}
-                onChange={(e) => setForm(p => ({ ...p, allCities: e.target.checked, cityIds: e.target.checked ? [] : p.cityIds }))}
-                className="h-4 w-4"
-              />
-              <label htmlFor="allCitiesToggle" className="text-xs font-semibold text-gray-700">
-                Available in All Cities (no city restriction)
-              </label>
-            </div>
-            {!form.allCities && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {cities.map(city => {
-                  const cid = city._id || city.id;
-                  const isSelected = form.cityIds.includes(cid);
-                  return (
-                    <button
-                      key={cid}
-                      type="button"
-                      onClick={() => {
-                        setForm(p => ({
-                          ...p,
-                          cityIds: isSelected ? p.cityIds.filter(id => id !== cid) : [...p.cityIds, cid]
-                        }));
-                      }}
-                      className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all ${
-                        isSelected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'
-                      }`}
-                    >
-                      {city.name}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1.5">Box Status</label>

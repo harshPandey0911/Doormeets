@@ -12,6 +12,13 @@ const homeContentSchema = new mongoose.Schema({
     default: null,
     index: true
   },
+  // Zone association (geofenced) - if null, considered default/fallback
+  zoneId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone',
+    default: null,
+    index: true
+  },
 
   // Banners (main homepage banners)
   banners: [{
@@ -388,19 +395,23 @@ const homeContentSchema = new mongoose.Schema({
   timestamps: true
 });
 
-homeContentSchema.statics.getHomeContent = async function (cityId = null) {
+homeContentSchema.statics.getHomeContent = async function (cityId = null, zoneId = null) {
   let homeContent = null;
 
-  if (cityId) {
-    homeContent = await this.findOne({ cityId });
+  if (zoneId) {
+    homeContent = await this.findOne({ zoneId });
+  }
+
+  if (!homeContent && cityId) {
+    homeContent = await this.findOne({ cityId, zoneId: null });
   }
 
   if (!homeContent) {
-    homeContent = await this.findOne({ cityId: null });
+    homeContent = await this.findOne({ zoneId: null, cityId: null });
   }
 
   if (!homeContent) {
-    homeContent = await this.create({ cityId: cityId || null });
+    homeContent = await this.create({ cityId: cityId || null, zoneId: zoneId || null });
   }
 
   return homeContent;

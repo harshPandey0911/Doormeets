@@ -126,6 +126,30 @@ const vendorBillSchema = new mongoose.Schema({
   companyRevenue: { type: Number, default: 0 },  // grandTotal − vendorTotalEarning
 
   // ==========================================
+  // 4.5 CLEAN ADMIN-FACING BREAKDOWN
+  // ==========================================
+  // Every service line (original + vendor-added) is settled through the same sgst/cgst →
+  // platform commission → level commission cascade used for the primary booking, and the
+  // same admin-margin → margin-GST → net split. These totals are the sum across every
+  // service line, kept separate from parts (which use a flat split, no per-tier cascade).
+  vendorServiceSgst: { type: Number, default: 0 },
+  vendorServiceCgst: { type: Number, default: 0 },
+  platformCommissionAmount: { type: Number, default: 0 },
+  levelCommissionAmount: { type: Number, default: 0 },
+
+  // customerPrice-equivalent minus vendor's gross base payout, summed across every service
+  // line, BEFORE the platform's own GST on that margin (distinct from companyRevenue, which
+  // also folds in the sgst/cgst/commission siphoned from the vendor's side).
+  adminMarginGross: { type: Number, default: 0 },
+  adminMarginGst: { type: Number, default: 0 },
+  adminMarginNet: { type: Number, default: 0 },
+
+  // Simple totals for the admin dashboard: what the customer paid, split by "originally
+  // booked" vs "added on site", independent of the service/parts/custom-item plumbing above.
+  totalServiceCharge: { type: Number, default: 0 },  // original booked service base only
+  totalAddonCharge: { type: Number, default: 0 },    // vendor-added services + parts + custom items base
+
+  // ==========================================
   // 5. STATUS & META
   // ==========================================
 

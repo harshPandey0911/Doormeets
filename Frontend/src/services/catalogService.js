@@ -375,6 +375,7 @@ export const publicCatalogService = {
     if (params.categoryId) queryParams.append('categoryId', params.categoryId);
     if (params.subCategoryId) queryParams.append('subCategoryId', params.subCategoryId);
     if (params.cityId) queryParams.append('cityId', params.cityId);
+    if (params.zoneId) queryParams.append('zoneId', params.zoneId);
     
     // Add user location if available for proximity-based filtering
     const lat = localStorage.getItem('user_lat');
@@ -384,14 +385,7 @@ export const publicCatalogService = {
       queryParams.append('lng', lng);
     }
 
-    const cacheKey = `public:services:${queryParams.toString()}`;
-    const cached = apiCache.get(cacheKey);
-    if (cached) return cached;
-
     const response = await api.get(`/public/services${queryParams.toString() ? `?${queryParams.toString()}` : ''}`);
-    if (response.data.success) {
-      apiCache.set(cacheKey, response.data, 60); // Enable cache for 60 seconds to prevent navigation refetches
-    }
     return response.data;
   },
 

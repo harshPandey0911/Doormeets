@@ -139,6 +139,17 @@ const RedirectionSelector = ({
 };
 
 const HomePage = ({ catalog, setCatalog, selectedCity }) => {
+  const [selectedZone, setSelectedZone] = useState("");
+  const [zonesList, setZonesList] = useState([]);
+
+  useEffect(() => {
+    const fetchZones = async () => {
+      try {
+        const res = await publicCatalogService.getZones ? await publicCatalogService.getZones() : null;
+      } catch (err) {}
+    };
+  }, []);
+
   const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
   const [bannerForm, setBannerForm] = useState({ imageUrl: "", text: "", targetCategoryId: "", slug: "", targetServiceId: "", scrollToSection: "" });
   const [editingBannerId, setEditingBannerId] = useState(null);
@@ -480,7 +491,8 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
       }
 
       if (selectedCity) payload.cityId = selectedCity;
-      const res = await homeContentService.update(payload);
+      if (selectedZone) payload.zoneId = selectedZone;
+      const res = await homeContentService.update(payload, { cityId: selectedCity, zoneId: selectedZone });
       if (res.success && res.homeContent) {
         const hc = res.homeContent;
         const addIds = (items) => (items || []).map((item, idx) => ({

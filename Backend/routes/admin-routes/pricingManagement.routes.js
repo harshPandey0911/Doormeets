@@ -7,12 +7,15 @@ const { body } = require('express-validator');
 
 const pricingValidation = [
   body('categoryId').notEmpty().withMessage('Category ID is required'),
-  body('subCategoryId').optional({ checkFalsy: true }).isMongoId().withMessage('Valid SubCategory ID is required'),
+  body('subCategoryId').optional({ nullable: true, checkFalsy: true }).custom(val => !val || typeof val === 'string'),
   body('serviceId').notEmpty().withMessage('Service ID is required'),
-  body('brandId').optional({ checkFalsy: true }).isMongoId().withMessage('Valid Brand ID is required'),
+  body('brandId').optional({ nullable: true, checkFalsy: true }).custom(val => !val || typeof val === 'string'),
+  body('cityId').optional({ nullable: true, checkFalsy: true }).custom(val => !val || typeof val === 'string'),
+  body('zoneId').optional({ nullable: true, checkFalsy: true }).custom(val => !val || typeof val === 'string'),
+  body('variantId').optional({ nullable: true, checkFalsy: true }).custom(val => !val || typeof val === 'string'),
   body('customerPrice').isNumeric().withMessage('Customer Price is required and must be a number'),
-  body('gstPercentage').isNumeric().withMessage('GST Percentage must be a number'),
-  body('platformCommission').isNumeric().withMessage('Platform Commission percentage must be a number')
+  body('gstPercentage').optional().isNumeric().withMessage('GST Percentage must be a number'),
+  body('platformCommission').optional().isNumeric().withMessage('Platform Commission percentage must be a number')
 ];
 
 router.use(authenticate, isAdmin);

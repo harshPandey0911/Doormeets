@@ -161,10 +161,13 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
   }
 
   if (!centerLocation || typeof centerLocation.lat !== 'number' || typeof centerLocation.lng !== 'number') {
-    console.warn('[LocationService] Invalid coordinates. City fallback for:', filters.city);
-    if (filters.city) {
-      return findVendorsByCity(filters.city, filters, newBookingEndTime);
-    }
+    // No reliable coordinates means we cannot determine which zone this booking belongs to.
+    // We deliberately do NOT fall back to a city-wide vendor search here — a city can span
+    // several zones (e.g. Gondia has Kudwa/Jaistambh/Tirora/Amgaon), and matching a vendor
+    // from the wrong zone within the same city is exactly the cross-zone leak this function
+    // exists to prevent. Returning no vendors routes the booking to admin for manual,
+    // zone-aware assignment instead.
+    console.warn('[LocationService] Invalid/missing coordinates — cannot resolve zone, skipping city-wide fallback to avoid cross-zone matches.');
     return [];
   }
 
@@ -184,9 +187,7 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
       ...baseQuery,
       $or: [
         { zoneId: matchedZone._id },
-        { zoneIds: matchedZone._id },
-        { zoneId: { $exists: false } },
-        { zoneId: null }
+        { zoneIds: matchedZone._id }
       ]
     };
 

@@ -13,6 +13,52 @@ const { calculateDistance } = require('../../services/locationService');
  */
 
 /**
+ * Given coordinates that don't fall inside any active zone, find the nearest active zone by
+ * straight-line distance to its polygon centroid. Used so an out-of-zone user can be told how
+ * far they are from the nearest serviceable area instead of just "not available here".
+ */
+const findNearestZoneInfo = async (lat, lng) => {
+  if (typeof lat !== 'number' || typeof lng !== 'number' || Number.isNaN(lat) || Number.isNaN(lng)) {
+    return null;
+  }
+  try {
+    const Zone = require('../../models/Zone');
+    const activeZones = await Zone.find({ isActive: true }).select('name coordinates').lean();
+
+    const haversine = (lat1, lng1, lat2, lng2) => {
+      const R = 6371; // Earth radius in km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
+
+    let nearestZone = null;
+    let minDist = Infinity;
+    activeZones.forEach(z => {
+      const ring = z.coordinates?.coordinates?.[0];
+      if (!ring || !ring.length) return;
+      let cLng = 0, cLat = 0;
+      ring.forEach(([rLng, rLat]) => { cLng += rLng; cLat += rLat; });
+      cLng /= ring.length;
+      cLat /= ring.length;
+
+      const dist = haversine(lat, lng, cLat, cLng);
+      if (dist < minDist) {
+        minDist = dist;
+        nearestZone = { name: z.name, distanceKm: Math.round(dist) };
+      }
+    });
+    return nearestZone;
+  } catch (e) {
+    console.error('[findNearestZoneInfo] error:', e.message);
+    return null;
+  }
+};
+
+/**
  * Get all active categories for user app
  * GET /api/public/categories
  */
@@ -72,12 +118,15 @@ const getPublicCategories = async (req, res) => {
       }
     }
 
-    // If no zone resolved → user is outside all zones → return empty
+    // If no zone resolved → user is outside all zones → return empty, along with how far the
+    // nearest serviceable zone is so the UI can show a distance instead of a bare message.
     if (!targetZoneId) {
+      const nearestZone = (lat && lng) ? await findNearestZoneInfo(parseFloat(lat), parseFloat(lng)) : null;
       return res.status(200).json({
         success: true,
         categories: [],
         outsideZone: true,
+        nearestZone,
         message: 'You are not in any service zone'
       });
     }
@@ -146,34 +195,49 @@ const getPublicCategories = async (req, res) => {
 
     // Filter and map
     const initialCategories = categories
-      .map(cat => ({
-        id: cat._id.toString(),
-        title: cat.title,
-        slug: cat.slug,
-        icon: cat.homeIconUrl || '',
-        bannerImage: cat.bannerImage || '',
-        badge: cat.homeBadge || '',
-        hasSaleBadge: cat.hasSaleBadge || false,
-        showOnHome: cat.showOnHome || false,
-        categoryType: cat.categoryType || 'service',
-        status: cat.status || 'active',
-        interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
-        isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false,
-        isGroupCategory: cat.isGroupCategory || false,
-        mappedCategories: (cat.mappedCategories || []).filter(mc => {
+      .map(cat => {
+        // A mapped sub-category is only included when it is explicitly assigned to the
+        // user's zone. There is no "empty zoneIds = global" fallback here anymore — a
+        // category must be deliberately configured for a zone to appear in it.
+        const filteredMapped = (cat.mappedCategories || []).filter(mc => {
           if (!mc || !mc._id) return false;
-          // Zone filter: only include mapped category if it's global or belongs to user's zone
           const mcZones = mc.zoneIds || [];
-          if (mcZones.length === 0) return true; // Global
-          if (targetZoneId && mcZones.some(z => z.toString() === targetZoneId)) return true;
-          return false;
-        }).map(mc => ({
-          id: mc._id.toString(),
-          title: mc.title,
-          slug: mc.slug,
-          icon: mc.homeIconUrl || ''
-        }))
-      }));
+          return targetZoneId && mcZones.some(z => z.toString() === targetZoneId);
+        });
+
+        const ownZones = cat.zoneIds || [];
+        const explicitlyZoned = !!(targetZoneId && ownZones.some(z => z.toString() === targetZoneId));
+        // A group/bundle card (e.g. "Electrician / Plumber / Carpenter") that carries no
+        // zoneIds of its own is visible only if at least one of its real mapped
+        // sub-categories is explicitly zoned here — never as a blanket "show everywhere".
+        const visibleViaChildren = !!cat.isGroupCategory && filteredMapped.length > 0;
+        const isVisible = explicitlyZoned || visibleViaChildren;
+
+        return {
+          id: cat._id.toString(),
+          title: cat.title,
+          slug: cat.slug,
+          icon: cat.homeIconUrl || '',
+          bannerImage: cat.bannerImage || '',
+          badge: cat.homeBadge || '',
+          hasSaleBadge: cat.hasSaleBadge || false,
+          showOnHome: cat.showOnHome || false,
+          categoryType: cat.categoryType || 'service',
+          status: cat.status || 'active',
+          interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
+          isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false,
+          isGroupCategory: cat.isGroupCategory || false,
+          _isVisible: isVisible,
+          mappedCategories: filteredMapped.map(mc => ({
+            id: mc._id.toString(),
+            title: mc.title,
+            slug: mc.slug,
+            icon: mc.homeIconUrl || ''
+          }))
+        };
+      })
+      .filter(cat => cat._isVisible)
+      .map(({ _isVisible, ...rest }) => rest);
 
     res.status(200).json({
       success: true,
@@ -271,10 +335,19 @@ const getPublicSubCategories = async (req, res) => {
  */
 const getPublicBookingHierarchy = async (req, res) => {
   try {
+    const { zoneId } = req.query;
+
     // We only want pricing where vendors actually support it
     // Wait, the prompt says: "Booking request goes only to matching vendors."
     // So we fetch the entire active pricing matrix.
-    const pricingMatrix = await ServiceBrandPricing.find({ isActive: true })
+    // Zone filter: a price entry configured for one zone must never surface in another —
+    // only entries scoped to the requester's zone or configured as global (zoneId: null) apply.
+    const pricingQuery = { isActive: true };
+    if (zoneId) {
+      pricingQuery.$or = [{ zoneId }, { zoneId: null }, { zoneId: { $exists: false } }];
+    }
+
+    const pricingMatrix = await ServiceBrandPricing.find(pricingQuery)
       .populate('categoryId', 'title slug')
       .populate('subCategoryId', 'title slug')
       .populate('serviceId', 'title slug')
@@ -759,13 +832,6 @@ const getPublicServices = async (req, res) => {
     const { brandId, brandSlug, categoryId, subCategoryId, lat, lng, cityId } = req.query;
 
     const query = { status: 'active' };
-    if (cityId) {
-      query.$or = [
-        { cityIds: cityId },
-        { cityIds: { $exists: false } },
-        { cityIds: { $size: 0 } }
-      ];
-    }
 
     // Find all active categories from DB (source of truth — admin status wins over vendor status)
     const activeCategoriesQuery = { status: { $in: ['active', 'coming_soon'] } };
@@ -954,71 +1020,158 @@ const getPublicServices = async (req, res) => {
       return dbActiveCatIds.has(idStr);
     });
 
-    // Deduplicate by title to ensure only one "Reti" shows up even if 10 vendors have it
+    // Deduplicate by service _id or title to ensure clean mapping
     const groupedServices = new Map();
 
     activeServices.forEach(svc => {
-      const titleKey = svc.title.toLowerCase().trim();
-      const existing = groupedServices.get(titleKey);
-
-      // If it exists, pick the CHEAPEST.
-      if (!existing) {
-        groupedServices.set(titleKey, svc);
-      } else {
-        const currentPrice = svc.basePrice || 0;
-        const existingPrice = existing.basePrice || 0;
-
-        if (currentPrice < existingPrice) {
-          groupedServices.set(titleKey, svc);
-        }
+      const key = svc._id.toString();
+      if (!groupedServices.has(key)) {
+        groupedServices.set(key, svc);
       }
     });
 
     activeServices = Array.from(groupedServices.values());
 
-    // Fetch pricing for these services
     const ServiceBrandPricing = require('../../models/ServiceBrandPricing');
+    const PricingConfig = require('../../models/PricingConfig');
     const serviceIds = activeServices.map(s => s._id);
-    const pricings = await ServiceBrandPricing.find({
+    let resolvedZoneId = (req.zone && req.zone._id) ? req.zone._id : (req.query.zoneId || null);
+
+    if (!resolvedZoneId && lat && lng) {
+      try {
+        const Zone = require('../../models/Zone');
+        const matchedZone = await Zone.findOne({
+          isActive: true,
+          coordinates: {
+            $geoIntersects: {
+              $geometry: {
+                type: 'Point',
+                coordinates: [parseFloat(lng), parseFloat(lat)]
+              }
+            }
+          }
+        }).select('_id').lean();
+        if (matchedZone) {
+          resolvedZoneId = matchedZone._id.toString();
+        }
+      } catch (zErr) {
+        console.error('[getPublicServices] Zone resolve error:', zErr);
+      }
+    }
+
+    const sbPricings = await ServiceBrandPricing.find({
       serviceId: { $in: serviceIds },
       isActive: true
     }).lean();
 
-    // Map pricing back to activeServices - resolve variant prices and use the cheapest variant price
+    const configPricings = await PricingConfig.find({
+      serviceId: { $in: serviceIds },
+      isActive: { $ne: false }  // Accept true OR missing/undefined field
+    }).lean();
+
+    // Map configPricings into unified pricing format (PricingConfig takes priority over legacy ServiceBrandPricing)
+    const pricings = [
+      ...configPricings.map(c => ({
+        serviceId: c.serviceId,
+        variantId: c.variantId || null,
+        zoneId: c.zoneId || null,
+        customerPrice: c.customerPrice,
+        finalCustomerPrice: c.customerPrice,
+        basePrice: c.customerPrice,
+        gstPercentage: c.gstPercentage || 18,
+        isActive: c.isActive !== false
+      })),
+      ...sbPricings
+    ];
+
+    // Map pricing back to activeServices - resolve variant prices (Zone-specific first, then Global fallback)
     activeServices = activeServices.map(svc => {
       // Map variants with resolved prices
       let resolvedVariants = [];
       if (Array.isArray(svc.variants)) {
         resolvedVariants = svc.variants.map(v => {
-          // Find pricing config specifically for this variant
-          const variantPricing = pricings.find(p => 
-            p.serviceId.toString() === svc._id.toString() &&
-            p.variantId && p.variantId.toString() === v._id.toString()
-          );
+          // 1. Try Zone-specific variant pricing
+          let variantPricing = null;
+          if (resolvedZoneId) {
+            variantPricing = pricings.find(p => 
+              p.serviceId.toString() === svc._id.toString() &&
+              p.variantId && (p.variantId.toString() === (v._id || v.id || '').toString() || p.variantId.toString() === v.title) &&
+              p.zoneId && p.zoneId.toString() === resolvedZoneId.toString()
+            );
+          }
+          // 2. Fallback to Global variant pricing (zoneId: null)
+          if (!variantPricing) {
+            variantPricing = pricings.find(p => 
+              p.serviceId.toString() === svc._id.toString() &&
+              p.variantId && (p.variantId.toString() === (v._id || v.id || '').toString() || p.variantId.toString() === v.title) &&
+              (!p.zoneId || p.zoneId === null)
+            );
+          }
+          // 3. Fallback to ANY zone pricing for this variant — only when the user's zone could
+          // not be resolved at all. If a zone IS resolved, a price configured for a *different*
+          // zone must never leak in (that's exactly the price-matrix cross-zone bug).
+          if (!variantPricing && !resolvedZoneId) {
+            variantPricing = pricings.find(p =>
+              p.serviceId.toString() === svc._id.toString() &&
+              p.variantId && (p.variantId.toString() === (v._id || v.id || '').toString() || p.variantId.toString() === v.title)
+            );
+          }
+
           return {
             ...v,
-            extraPrice: variantPricing ? (variantPricing.finalCustomerPrice || variantPricing.basePrice) : (v.extraPrice || 0)
+            extraPrice: variantPricing ? (variantPricing.customerPrice ?? variantPricing.finalCustomerPrice ?? variantPricing.basePrice ?? 0) : 0
           };
         });
       }
 
       // Determine cheapest price
       let cheapestPrice = 0;
-      const variantPrices = resolvedVariants.map(v => v.extraPrice).filter(price => price > 0);
-      if (variantPrices.length > 0) {
-        cheapestPrice = Math.min(...variantPrices);
-      } else {
-        // Fallback to base pricing configuration if no variant pricing is defined
-        const basePricing = pricings.find(p => p.serviceId.toString() === svc._id.toString() && !p.variantId);
-        if (basePricing) {
-          cheapestPrice = basePricing.finalCustomerPrice || basePricing.basePrice || 0;
+
+      // 1. Try Base Pricing for exact resolvedZoneId
+      let basePricing = null;
+      if (resolvedZoneId) {
+        basePricing = pricings.find(p => p.serviceId.toString() === svc._id.toString() && (!p.variantId || p.variantId === null) && p.zoneId && p.zoneId.toString() === resolvedZoneId.toString());
+      }
+      // 2. Fallback to Global Base Pricing (zoneId: null)
+      if (!basePricing) {
+        basePricing = pricings.find(p => p.serviceId.toString() === svc._id.toString() && (!p.variantId || p.variantId === null) && (!p.zoneId || p.zoneId === null));
+      }
+      // 3. Fallback to ANY zone base pricing for this service — only when the user's zone could
+      // not be resolved at all. A resolved zone must stick to its own zone-specific/global price
+      // and never borrow a price configured for a different zone.
+      if (!basePricing && !resolvedZoneId) {
+        basePricing = pricings.find(p => p.serviceId.toString() === svc._id.toString() && (!p.variantId || p.variantId === null));
+      }
+
+      if (basePricing) {
+        cheapestPrice = basePricing.customerPrice ?? basePricing.finalCustomerPrice ?? basePricing.basePrice ?? 0;
+      }
+
+      // Pricing entries considered for this zone only: exact zone match, global (zoneId null),
+      // or — if the zone genuinely couldn't be resolved — any zone as a last resort.
+      const zoneScopedPricings = pricings.filter(p => {
+        if (p.serviceId.toString() !== svc._id.toString()) return false;
+        if (!resolvedZoneId) return true;
+        return !p.zoneId || p.zoneId.toString() === resolvedZoneId.toString();
+      });
+
+      if (!cheapestPrice || cheapestPrice === 0) {
+        // Fallback to variants if no base pricing is defined
+        const variantPrices = resolvedVariants.map(v => v.extraPrice).filter(price => price > 0);
+        const allPricedValues = zoneScopedPricings.map(p => p.customerPrice ?? p.finalCustomerPrice ?? p.basePrice).filter(p => Number(p) > 0);
+
+        if (variantPrices.length > 0) {
+          cheapestPrice = Math.min(...variantPrices);
+        } else if (allPricedValues.length > 0) {
+          cheapestPrice = Math.min(...allPricedValues);
         }
       }
 
-      const cheapestPricing = pricings.find(p => p.serviceId.toString() === svc._id.toString());
+      const cheapestPricing = basePricing || zoneScopedPricings[0];
 
       return {
         ...svc,
+        price: cheapestPrice,
         basePrice: cheapestPrice, // Present final exact customer price as basePrice for user app
         variants: resolvedVariants,
         gstPercentage: cheapestPricing ? (cheapestPricing.gstPercentage || 18) : 18
@@ -1078,7 +1231,8 @@ const getPublicServices = async (req, res) => {
           title: svc.title,
           slug: svc.slug,
           icon: svc.iconUrl,
-          basePrice: svc.basePrice,
+          price: svc.price ?? svc.basePrice ?? 0,
+          basePrice: svc.basePrice ?? svc.price ?? 0,
           discountPrice: svc.discountPrice || 0,
           gstPercentage: svc.gstPercentage,
           description: svc.description,
@@ -1280,13 +1434,16 @@ const getPublicHomeData = async (req, res) => {
       }
     }
 
-    // If no zone resolved → user is outside all zones → return empty
+    // If no zone resolved → user is outside all zones → return empty, along with how far the
+    // nearest serviceable zone is so the UI can show a distance instead of a bare message.
     if (!targetZoneId) {
+      const nearestZone = (lat && lng) ? await findNearestZoneInfo(parseFloat(lat), parseFloat(lng)) : null;
       return res.status(200).json({
         success: true,
         categories: [],
         homeContent: null,
         outsideZone: true,
+        nearestZone,
         message: 'You are not in any service zone'
       });
     }
@@ -1367,33 +1524,45 @@ const getPublicHomeData = async (req, res) => {
     }
 
     const formattedCategories = categoriesRes
-      .map(cat => ({
-        id: cat._id.toString(),
-        title: cat.title,
-        slug: cat.slug,
-        icon: cat.homeIconUrl || '',
-        bannerImage: cat.bannerImage || '',
-        description: cat.description || '',
-        badge: cat.homeBadge || '',
-        hasSaleBadge: cat.hasSaleBadge || false,
-        categoryType: cat.categoryType || 'service',
-        status: cat.status || 'active',
-        interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
-        isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false,
-        isGroupCategory: cat.isGroupCategory || false,
-        mappedCategories: (cat.mappedCategories || []).filter(mc => {
+      .map(cat => {
+        // See getPublicCategories: a mapped sub-category must be explicitly zoned here —
+        // no "empty zoneIds = global" fallback.
+        const filteredMapped = (cat.mappedCategories || []).filter(mc => {
           if (!mc || !mc._id) return false;
           const mcZones = mc.zoneIds || [];
-          if (mcZones.length === 0) return true; // Global
-          if (targetZoneId && mcZones.some(z => z.toString() === targetZoneId)) return true;
-          return false;
-        }).map(mc => ({
-          id: mc._id.toString(),
-          title: mc.title,
-          slug: mc.slug,
-          icon: mc.homeIconUrl || ''
-        }))
-      }));
+          return targetZoneId && mcZones.some(z => z.toString() === targetZoneId);
+        });
+
+        const ownZones = cat.zoneIds || [];
+        const explicitlyZoned = !!(targetZoneId && ownZones.some(z => z.toString() === targetZoneId));
+        const visibleViaChildren = !!cat.isGroupCategory && filteredMapped.length > 0;
+        const isVisible = explicitlyZoned || visibleViaChildren;
+
+        return {
+          id: cat._id.toString(),
+          title: cat.title,
+          slug: cat.slug,
+          icon: cat.homeIconUrl || '',
+          bannerImage: cat.bannerImage || '',
+          description: cat.description || '',
+          badge: cat.homeBadge || '',
+          hasSaleBadge: cat.hasSaleBadge || false,
+          categoryType: cat.categoryType || 'service',
+          status: cat.status || 'active',
+          interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
+          isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false,
+          isGroupCategory: cat.isGroupCategory || false,
+          _isVisible: isVisible,
+          mappedCategories: filteredMapped.map(mc => ({
+            id: mc._id.toString(),
+            title: mc.title,
+            slug: mc.slug,
+            icon: mc.homeIconUrl || ''
+          }))
+        };
+      })
+      .filter(cat => cat._isVisible)
+      .map(({ _isVisible, ...rest }) => rest);
 
     // Deduplicate by title to prevent duplicate icons on home page
     const uniqueCategories = [];
@@ -1877,14 +2046,45 @@ const getPublicServiceDynamicDetails = async (req, res) => {
 
     const serviceId = service._id;
 
-    const { cityId } = req.query;
+    const { cityId, zoneId, lat, lng } = req.query;
+
+    let targetZoneId = zoneId || null;
+    if (!targetZoneId && lat && lng) {
+      try {
+        const Zone = require('../../models/Zone');
+        const matchedZone = await Zone.findOne({
+          isActive: true,
+          coordinates: {
+            $geoIntersects: {
+              $geometry: {
+                type: 'Point',
+                coordinates: [parseFloat(lng), parseFloat(lat)]
+              }
+            }
+          }
+        }).select('_id').lean();
+        if (matchedZone) {
+          targetZoneId = matchedZone._id.toString();
+        }
+      } catch (zErr) {
+        console.error('[getPublicServiceBySlug] Zone resolve error:', zErr);
+      }
+    }
+
     const PricingConfig = require('../../models/PricingConfig');
     let pricing = null;
-    if (cityId) {
-      pricing = await PricingConfig.findOne({ serviceId, cityId, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
+
+    // 1. Priority 1: Zone-specific pricing
+    if (targetZoneId) {
+      pricing = await PricingConfig.findOne({ serviceId, zoneId: targetZoneId, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
     }
+    // 2. Priority 2: City-specific pricing
+    if (!pricing && cityId) {
+      pricing = await PricingConfig.findOne({ serviceId, cityId, zoneId: null, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
+    }
+    // 3. Priority 3: Global fallback pricing
     if (!pricing) {
-      pricing = await PricingConfig.findOne({ serviceId, cityId: null, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
+      pricing = await PricingConfig.findOne({ serviceId, zoneId: null, cityId: null, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
     }
     if (!pricing) {
       pricing = await PricingConfig.findOne({ serviceId, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
@@ -1951,17 +2151,30 @@ const getPublicServiceDynamicDetails = async (req, res) => {
     const pricingRules = await PricingRule.find({ serviceId }).lean();
     const pageBlocks = await ServicePageBlock.find({ serviceId, isVisible: true }).sort({ order: 1 }).lean();
 
-    // Resolve variant-specific prices from ServiceBrandPricing cache
-    const pricings = await ServiceBrandPricing.find({
+    // Resolve variant-specific prices from PricingConfig and ServiceBrandPricing
+    const sbpPricings = await ServiceBrandPricing.find({
       serviceId,
       isActive: true
     }).lean();
+    const pcPricings = await PricingConfig.find({
+      serviceId,
+      isActive: { $ne: false },
+      variantId: { $ne: null }
+    }).lean();
+
+    const pricings = [...sbpPricings, ...pcPricings];
 
     let resolvedVariants = [];
     if (Array.isArray(resolvedService.variants)) {
       resolvedVariants = resolvedService.variants.map(v => {
         let variantPricing = null;
-        if (cityId) {
+        if (targetZoneId) {
+          variantPricing = pricings.find(p => 
+            p.variantId && p.variantId.toString() === v._id.toString() &&
+            p.zoneId && p.zoneId.toString() === targetZoneId.toString()
+          );
+        }
+        if (!variantPricing && cityId) {
           variantPricing = pricings.find(p => 
             p.variantId && p.variantId.toString() === v._id.toString() &&
             p.cityId && p.cityId.toString() === cityId.toString()
@@ -1970,12 +2183,18 @@ const getPublicServiceDynamicDetails = async (req, res) => {
         if (!variantPricing) {
           variantPricing = pricings.find(p => 
             p.variantId && p.variantId.toString() === v._id.toString() &&
-            !p.cityId
+            !p.zoneId && !p.cityId
           );
         }
+        if (!variantPricing) {
+          variantPricing = pricings.find(p => 
+            p.variantId && p.variantId.toString() === v._id.toString()
+          );
+        }
+        const resolvedPrice = variantPricing ? (variantPricing.customerPrice ?? variantPricing.finalCustomerPrice ?? variantPricing.basePrice) : (v.extraPrice || 0);
         return {
           ...v,
-          extraPrice: variantPricing ? (variantPricing.finalCustomerPrice || variantPricing.basePrice) : (v.extraPrice || 0)
+          extraPrice: Number(resolvedPrice || 0)
         };
       });
       resolvedService.variants = resolvedVariants;
@@ -2051,42 +2270,7 @@ const resolveZoneByCoordinates = async (req, res) => {
     }
 
     if (!zone) {
-      // Calculate distance to nearest zone centroid
-      let nearestZone = null;
-      try {
-        const allZones = await Zone.find({ isActive: true }).select('name coordinates').lean();
-        let minDist = Infinity;
-
-        // Haversine distance helper
-        const haversine = (lat1, lng1, lat2, lng2) => {
-          const R = 6371; // Earth radius in km
-          const dLat = (lat2 - lat1) * Math.PI / 180;
-          const dLng = (lng2 - lng1) * Math.PI / 180;
-          const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLng / 2) ** 2;
-          return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        };
-
-        allZones.forEach(z => {
-          if (z.coordinates && z.coordinates.coordinates && z.coordinates.coordinates[0]) {
-            // Calculate centroid of polygon
-            const ring = z.coordinates.coordinates[0];
-            let cLng = 0, cLat = 0;
-            ring.forEach(([lng, lat]) => { cLng += lng; cLat += lat; });
-            cLng /= ring.length;
-            cLat /= ring.length;
-
-            const dist = haversine(parsedLat, parsedLng, cLat, cLng);
-            if (dist < minDist) {
-              minDist = dist;
-              nearestZone = { name: z.name, distanceKm: Math.round(dist) };
-            }
-          }
-        });
-      } catch (e) {
-        console.error('Nearest zone calc error:', e.message);
-      }
+      const nearestZone = await findNearestZoneInfo(parsedLat, parsedLng);
 
       return res.status(200).json({
         success: true,

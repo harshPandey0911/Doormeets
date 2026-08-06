@@ -222,15 +222,27 @@ const serviceSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Generate slug from title before saving
+// Generate unique slug from title before validation
 serviceSchema.pre('validate', async function (next) {
-  if (this.isModified('title') && !this.slug) {
-    this.slug = this.title
+  if (this.isModified('title') || !this.slug) {
+    let baseSlug = (this.title || '')
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .replace(/(^-|-$)/g, '');
+
+    if (!baseSlug) baseSlug = 'service';
+
+    let uniqueSlug = baseSlug;
+    let count = 1;
+    const Service = this.constructor;
+
+    while (await Service.exists({ slug: uniqueSlug, _id: { $ne: this._id } })) {
+      uniqueSlug = `${baseSlug}-${count}`;
+      count++;
+    }
+    this.slug = uniqueSlug;
   }
   next();
 });

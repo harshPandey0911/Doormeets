@@ -12,6 +12,8 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
   const [services, setServices] = useState([]);
   const [brands, setBrands] = useState([]);
   const [cities, setCities] = useState([]);
+  const [zones, setZones] = useState([]);
+  const [selectedZoneFilter, setSelectedZoneFilter] = useState('');
 
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,6 +26,7 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
     serviceId: '',
     brandId: '',
     cityId: '',
+    zoneId: '',
     customerPrice: '',
     pricePerMinute: '',
     minimumMinutes: 30,
@@ -46,13 +49,14 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [prcRes, catRes, subRes, srvRes, brndRes, cityRes, settingsRes] = await Promise.all([
+      const [prcRes, catRes, subRes, srvRes, brndRes, cityRes, zoneRes, settingsRes] = await Promise.all([
         api.get('/admin/pricing'),
         api.get('/admin/categories'),
         api.get('/admin/subcategories'),
         api.get('/admin/services'),
         api.get('/admin/brands'),
         cityService.getAll(),
+        api.get('/admin/zones').catch(() => ({ data: { success: false, zones: [] } })),
         api.get('/admin/settings').catch(() => null)
       ]);
       setPricings(prcRes.data.data || prcRes.data.pricings || []);
@@ -60,6 +64,7 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
       setSubCategories(subRes.data.data || subRes.data.subCategories || []);
       setServices(srvRes.data.services || []);
       setBrands(brndRes.data.brands || []);
+      setZones(zoneRes?.data?.zones || zoneRes?.data?.data || []);
 
       if (settingsRes?.data?.success) {
         setGlobalSettings(settingsRes.data.settings);
@@ -92,6 +97,7 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
         serviceId: pricing.serviceId?._id || '',
         brandId: pricing.brandId?._id || '',
         cityId: pricing.cityId?._id || pricing.cityId || '',
+        zoneId: pricing.zoneId?._id || pricing.zoneId || '',
         customerPrice: pricing.customerPrice || '',
         pricePerMinute: pricing.pricePerMinute || '',
         minimumMinutes: pricing.minimumMinutes || 30,
@@ -116,6 +122,7 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
         serviceId: '',
         brandId: '',
         cityId: '',
+        zoneId: '',
         customerPrice: '',
         pricePerMinute: '',
         minimumMinutes: 30,
@@ -169,6 +176,7 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
         ...formData,
         // Send optional brandId as null if brand is disabled
         brandId: (selectedCategory?.enableBrands !== false && formData.brandId) ? formData.brandId : null,
+        zoneId: formData.zoneId || null,
         // For MINUTE_BASED: customerPrice is the base charge, pricePerMinute is the extra rate per 10 mins
         customerPrice: Number(formData.customerPrice || 0),
         pricePerMinute: isMinuteBased ? Number(formData.pricePerMinute || 0) : null,
@@ -329,7 +337,7 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="p-4 font-semibold text-gray-600">Hierarchy</th>
-                <th className="p-4 font-semibold text-gray-600">City</th>
+                <th className="p-4 font-semibold text-gray-600">Zone / Region</th>
                 <th className="p-4 font-semibold text-gray-600">Price (Customer pays)</th>
                 <th className="p-4 font-semibold text-gray-600">Taxable Base</th>
                 <th className="p-4 font-semibold text-gray-600">Platform Comm</th>
@@ -341,12 +349,12 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
             <tbody>
               {filteredPricings.map(prc => {
                 const calculations = prc.calculations || {};
-                const displayPrice = prc.gstIncluded ? prc.customerPrice : prc.customerPrice * (1 + (prc.gstPercentage || 18) / 100);
-                const displayTaxable = prc.gstIncluded ? prc.customerPrice - (prc.customerPrice * ((prc.gstPercentage || 18) / 100)) : prc.customerPrice;
-                const displayPlatComm = displayTaxable * ((prc.platformCommission || 15) / 100);
-                const profL1 = displayPlatComm + (displayTaxable * ((prc.l1Commission || 5) / 100));
-                const profL2 = displayPlatComm + (displayTaxable * ((prc.l2Commission || 8) / 100));
-                const profL3 = displayPlatComm + (displayTaxable * ((prc.l3Commission || 10) / 100));
+                const displayPrice = Math.round(prc.gstIncluded ? prc.customerPrice : prc.customerPrice * (1 + (prc.gstPercentage || 18) / 100));
+                const displayTaxable = Math.round(prc.gstIncluded ? prc.customerPrice - (prc.customerPrice * ((prc.gstPercentage || 18) / 100)) : prc.customerPrice);
+                const displayPlatComm = Math.round(displayTaxable * ((prc.platformCommission || 15) / 100));
+                const profL1 = Math.round(displayPlatComm + (displayTaxable * ((prc.l1Commission || 5) / 100)));
+                const profL2 = Math.round(displayPlatComm + (displayTaxable * ((prc.l2Commission || 8) / 100)));
+                const profL3 = Math.round(displayPlatComm + (displayTaxable * ((prc.l3Commission || 10) / 100)));
 
                 return (
                   <tr key={prc._id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
@@ -359,21 +367,21 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${prc.cityId ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-green-50 text-green-700 border border-green-100'}`}>
-                        {prc.cityId?.name || 'Global'}
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${prc.zoneId ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                        {prc.zoneId?.name || prc.zoneId || 'Global (All Zones)'}
                       </span>
                     </td>
                     <td className="p-4 font-bold text-gray-800">
-                      ₹{(displayPrice || 0).toFixed(2)}
+                      ₹{displayPrice}
                       {prc.pricingType === 'subscription' && (
                         <span className="block text-[10px] text-blue-600 font-bold mt-0.5">{prc.visitsCredits || 4} Visits / {prc.validityDays || 30} Days</span>
                       )}
                       <span className="text-[10px] block text-gray-400 font-semibold">{prc.gstIncluded ? 'GST Inc.' : 'GST Exc.'} ({prc.gstPercentage}%)</span>
                     </td>
-                    <td className="p-4 text-blue-600 font-medium">₹{(displayTaxable || 0).toFixed(2)}</td>
-                    <td className="p-4 text-purple-600 font-medium">₹{(displayPlatComm || 0).toFixed(2)} ({prc.platformCommission}%)</td>
+                    <td className="p-4 text-blue-600 font-medium">₹{displayTaxable}</td>
+                    <td className="p-4 text-purple-600 font-medium">₹{displayPlatComm} ({prc.platformCommission}%)</td>
                     <td className="p-4 bg-green-50 font-bold text-green-700">
-                      ₹{profL1.toFixed(2)} / ₹{profL2.toFixed(2)} / ₹{profL3.toFixed(2)}
+                      ₹{profL1} / ₹{profL2} / ₹{profL3}
                     </td>
                     <td className="p-4">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${prc.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -409,15 +417,39 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
               <form id="pricing-form" onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">City Availability</label>
-                    <select
-                      className="w-full p-2.5 border border-gray-300 rounded-lg outline-none text-sm font-semibold"
-                      value={formData.cityId}
-                      onChange={(e) => setFormData({...formData, cityId: e.target.value})}
-                    >
-                      <option value="">All Cities (Global Pricing)</option>
-                      {cities.map(city => <option key={city._id || city.id} value={city._id || city.id}>{city.name}</option>)}
-                    </select>
+                    <label className="block text-xs font-bold text-blue-600 mb-1 uppercase">📍 Zone Specificity (Geofenced)</label>
+                    {(() => {
+                      const selectedCat = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
+                      const catZoneIds = (selectedCat?.zoneIds || []).map(z => typeof z === 'object' ? (z._id || z.id) : String(z));
+                      const isCategoryZoneRestricted = catZoneIds.length > 0;
+                      const allowedZones = isCategoryZoneRestricted
+                        ? zones.filter(z => catZoneIds.includes(String(z._id || z.id)))
+                        : zones;
+
+                      return (
+                        <>
+                          <select
+                            className="w-full p-2.5 border border-blue-300 bg-blue-50/40 rounded-lg outline-none text-sm font-semibold text-blue-900"
+                            value={formData.zoneId}
+                            onChange={(e) => setFormData({...formData, zoneId: e.target.value})}
+                            required={isCategoryZoneRestricted}
+                          >
+                            {!isCategoryZoneRestricted && (
+                              <option value="">Global (All Zones Default Price)</option>
+                            )}
+                            {isCategoryZoneRestricted && (
+                              <option value="" disabled>-- Select Assigned Category Zone * --</option>
+                            )}
+                            {allowedZones.map(z => <option key={z._id || z.id} value={z._id || z.id}>{z.name}</option>)}
+                          </select>
+                          {isCategoryZoneRestricted && (
+                            <p className="text-[11px] text-purple-700 font-bold mt-1.5 flex items-center gap-1 bg-purple-50 p-2 rounded border border-purple-200">
+                              ℹ️ Category "{selectedCat.title}" is restricted to {catZoneIds.length} Zone(s). Global price is disabled.
+                            </p>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Category</label>

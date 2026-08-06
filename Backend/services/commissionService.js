@@ -4,6 +4,20 @@ const Transaction = require('../models/Transaction');
 const Vendor = require('../models/Vendor');
 
 /**
+ * Split a platform margin into its GST component and net-of-GST profit.
+ * gstIncluded=true: the margin figure is treated as already inclusive of GST (matches how
+ * customer-facing prices are configured across this system — see PricingConfig.gstIncluded),
+ * so GST is subtracted out to find the real net profit admin actually keeps.
+ * gstIncluded=false: the margin is a pure pre-tax figure and GST is collected on top from the
+ * customer separately, so the margin itself isn't reduced.
+ */
+const splitMarginGst = (grossMargin, gstPct, gstIncluded) => {
+  const gst = parseFloat((grossMargin * (gstPct / 100)).toFixed(2));
+  const net = gstIncluded ? parseFloat((grossMargin - gst).toFixed(2)) : grossMargin;
+  return { gst, net };
+};
+
+/**
  * Centrally processes booking completion, computes commission & records transaction ledger entries.
  * @param {string} bookingId - Mongoose Booking ID.
  */
@@ -36,6 +50,12 @@ async function processBookingCompletion(bookingId) {
     // 3. Compute Splits (Use custom Price Matrix if configured, otherwise fallback to percentage split)
     let adminCommission = 0;
     let vendorShare = 0;
+    // Admin's raw margin (before the platform's own GST on that margin), and what's left of
+    // it after remitting that GST — kept distinct from adminCommission, which also folds in
+    // the SGST/CGST/commission siphoned from the vendor's share.
+    let adminMarginGross = 0;
+    let adminMarginGst = 0;
+    let adminMarginNet = 0;
 
     const VendorBill = require('../models/VendorBill');
     const bill = await VendorBill.findOne({ bookingId: booking._id });
@@ -44,6 +64,19 @@ async function processBookingCompletion(bookingId) {
       vendorShare = bill.vendorTotalEarning;
       adminCommission = bill.companyRevenue ?? parseFloat((amount - vendorShare).toFixed(2));
       console.log(`[CommissionService] Using VendorBill single source of truth: vendorShare=${vendorShare}, adminCommission=${adminCommission}`);
+      // The bill already computed its own admin-margin GST split per service line (original +
+      // every add-on, each through its own gst%/sgst%/cgst%/commission) — use that directly
+      // instead of re-deriving it here with a blind 18% guess.
+      if (bill.adminMarginGross !== undefined && bill.adminMarginGross !== null && bill.adminMarginGross > 0) {
+        adminMarginGross = bill.adminMarginGross;
+        adminMarginGst = bill.adminMarginGst || 0;
+        adminMarginNet = bill.adminMarginNet || 0;
+      } else {
+        // Older bills generated before this breakdown existed — fall back to treating the
+        // whole companyRevenue as the margin at the standard 18%.
+        adminMarginGross = Math.max(0, adminCommission);
+        ({ gst: adminMarginGst, net: adminMarginNet } = splitMarginGst(adminMarginGross, 18, true));
+      }
     } else {
       let basePayout = 0;
       let acceptanceFee = 0;
@@ -214,6 +247,14 @@ async function processBookingCompletion(bookingId) {
         const baseVendorShare = Math.max(0, levelCommissionBasis - levelCommissionAmount);
         vendorShare = parseFloat((baseVendorShare + instantShare + partsPayout).toFixed(2));
         adminCommission = parseFloat((amount - vendorShare).toFixed(2));
+
+        // Admin's own margin is customerPrice-equivalent minus the vendor's gross base payout
+        // — BEFORE any of the vendor-side sgst/cgst/commission deductions above, which are the
+        // vendor's own tax/commission obligations, not platform revenue subject to this GST.
+        const gstPctForMargin = pricing ? Number(pricing.gstPercentage ?? 18) : 18;
+        const gstIncludedForMargin = pricing ? (pricing.gstIncluded !== false) : true;
+        adminMarginGross = Math.max(0, parseFloat((amount - basePayout).toFixed(2)));
+        ({ gst: adminMarginGst, net: adminMarginNet } = splitMarginGst(adminMarginGross, gstPctForMargin, gstIncludedForMargin));
       } else if (booking.bookingType === 'instant' && settings) {
         const markupFee = settings.instantBookingMarkup !== undefined ? settings.instantBookingMarkup : 99;
         const vendorMarkupShare = settings.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
@@ -225,14 +266,28 @@ async function processBookingCompletion(bookingId) {
 
         adminCommission = parseFloat((baseAdminCommission + adminMarkupShare).toFixed(2));
         vendorShare = parseFloat((baseVendorShare + vendorMarkupShare).toFixed(2));
+
+        // No explicit vendorPayoutBase in this fallback — admin's whole commission is the margin.
+        const instantGstPct = pricing ? Number(pricing.gstPercentage ?? 18) : 18;
+        const instantGstIncluded = pricing ? (pricing.gstIncluded !== false) : true;
+        adminMarginGross = Math.max(0, adminCommission);
+        ({ gst: adminMarginGst, net: adminMarginNet } = splitMarginGst(adminMarginGross, instantGstPct, instantGstIncluded));
       } else {
         adminCommission = parseFloat(((amount * commissionPct) / 100).toFixed(2));
         vendorShare = parseFloat((amount - adminCommission).toFixed(2));
+
+        const fallbackGstPct = pricing ? Number(pricing.gstPercentage ?? 18) : 18;
+        const fallbackGstIncluded = pricing ? (pricing.gstIncluded !== false) : true;
+        adminMarginGross = Math.max(0, adminCommission);
+        ({ gst: adminMarginGst, net: adminMarginNet } = splitMarginGst(adminMarginGross, fallbackGstPct, fallbackGstIncluded));
       }
     }
 
     booking.totalAmount = amount;
     booking.adminCommission = adminCommission;
+    booking.adminMarginGross = adminMarginGross;
+    booking.adminMarginGst = adminMarginGst;
+    booking.adminMarginNet = adminMarginNet;
     booking.vendorShare = vendorShare;
 
     // 4. Map paymentMethod and set status values
@@ -266,6 +321,9 @@ async function processBookingCompletion(bookingId) {
       description: `${isCash ? 'Cash' : 'Online'} payment collection of ₹${amount} recorded for booking #${booking.bookingNumber}`,
       metadata: {
         adminCommission,
+        adminMarginGross,
+        adminMarginGst,
+        adminMarginNet,
         vendorShare,
         commissionPercentage: commissionPct
       }

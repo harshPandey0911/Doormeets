@@ -6,6 +6,52 @@ const Settings = require('../../models/Settings');
 const { BILL_STATUS } = require('../../utils/constants');
 
 /**
+ * Settle one service line — the originally booked service, or a vendor-added extra pulled
+ * from the central VendorServiceCatalog library — through the exact same cascade used for the
+ * main booking's commission split in services/commissionService.js:
+ *   vendor payout base → sgst + cgst + platform commission (parallel, off the base) →
+ *   remaining → level commission (off the remaining) → vendor's net earning.
+ * Admin's margin is this item's GST-inclusive customer total minus the vendor's GROSS base
+ * payout (before the cascade above), then split by the item's own GST% the same way the main
+ * booking's admin margin is (see splitMarginGst in commissionService.js).
+ */
+const settleServiceLine = ({ itemTotal, vendorPayoutBase, gstPct, gstIncluded, sgstPct, cgstPct, platformCommPct, levelCommPct }) => {
+  const base = Math.max(0, Number(vendorPayoutBase) || 0);
+  const sgstAmount = base * (Number(sgstPct) || 0) / 100;
+  const cgstAmount = base * (Number(cgstPct) || 0) / 100;
+  const platformCommissionAmount = base * (Number(platformCommPct) || 0) / 100;
+
+  const levelCommissionBasis = Math.max(0, base - sgstAmount - cgstAmount - platformCommissionAmount);
+  const levelCommissionAmount = levelCommissionBasis * (Number(levelCommPct) || 0) / 100;
+
+  const vendorEarning = Math.max(0, levelCommissionBasis - levelCommissionAmount);
+
+  const adminMarginGross = Math.max(0, (Number(itemTotal) || 0) - base);
+  const marginGst = parseFloat((adminMarginGross * (Number(gstPct) || 0) / 100).toFixed(2));
+  const adminMarginNet = gstIncluded !== false ? parseFloat((adminMarginGross - marginGst).toFixed(2)) : adminMarginGross;
+
+  return {
+    vendorEarning: parseFloat(vendorEarning.toFixed(2)),
+    sgstAmount: parseFloat(sgstAmount.toFixed(2)),
+    cgstAmount: parseFloat(cgstAmount.toFixed(2)),
+    platformCommissionAmount: parseFloat(platformCommissionAmount.toFixed(2)),
+    levelCommissionAmount: parseFloat(levelCommissionAmount.toFixed(2)),
+    adminMarginGross: parseFloat(adminMarginGross.toFixed(2)),
+    adminMarginGst: marginGst,
+    adminMarginNet
+  };
+};
+
+/** Pick l1/l2/l3 commission % from a config-like object based on the vendor's assigned tier. */
+const pickLevelCommission = (configObj, currentLevel, fallback) => {
+  const level = String(currentLevel || 'L3').toUpperCase();
+  if (!configObj) return fallback;
+  if (level === 'L1') return configObj.l1Commission ?? fallback;
+  if (level === 'L2') return configObj.l2Commission ?? fallback;
+  return configObj.l3Commission ?? fallback;
+};
+
+/**
  * Create or Update Vendor Bill
  * ────────────────────────────
  * Revenue Model:
@@ -45,12 +91,23 @@ const createOrUpdateBill = async (req, res) => {
     // Always use the booking's vendorId for the bill
     const billVendorId = booking.vendorId;
 
-    // ── Fetch Settings (frozen snapshot) ──
+    // ── Fetch Settings (frozen snapshot) + vendor's tier (drives level commission %) ──
     const settings = await Settings.findOne({ type: 'global' });
     const serviceSplitPct = settings?.servicePayoutPercentage ?? 70;
     const partsSplitPct = settings?.partsPayoutPercentage ?? 10;
     const serviceGstPct = settings?.serviceGstPercentage ?? 18;
     const partsGstPct = settings?.partsGstPercentage ?? 18;
+    const globalPlatformCommPct = settings?.commissionPercentage ?? 0;
+    const globalLevelDefaults = {
+      l1Commission: settings?.commissionRates?.level1 ?? 10,
+      l2Commission: settings?.commissionRates?.level2 ?? 15,
+      l3Commission: settings?.commissionRates?.level3 ?? 20
+    };
+
+    const Vendor = require('../../models/Vendor');
+    const vendorDoc = await Vendor.findById(billVendorId).select('currentLevel').lean();
+    const vendorCurrentLevel = vendorDoc?.currentLevel || 'L3';
+    const globalLevelCommPct = pickLevelCommission(globalLevelDefaults, vendorCurrentLevel, 0);
 
     // ═══════════════════════════════════════
     // 1. ORIGINAL SERVICE (from booking)
@@ -63,9 +120,13 @@ const createOrUpdateBill = async (req, res) => {
     const visitingCharges = Number(booking.visitingCharges) || 0;
 
     // ═══════════════════════════════════════
-    // 2. VENDOR-ADDED SERVICES
+    // 2. VENDOR-ADDED SERVICES (from the central VendorServiceCatalog library)
     // ═══════════════════════════════════════
+    // Each add-on is settled through the exact same cascade as the originally booked service —
+    // its OWN gst%, sgst/cgst%, platform commission and level commission (falling back to
+    // global Settings when the catalog item doesn't override them), never a hardcoded 18%.
     const processedServices = [];
+    const addonServiceSettlements = [];
     let vendorServiceBase = 0;
     let vendorServiceGST = 0;
 
@@ -80,16 +141,17 @@ const createOrUpdateBill = async (req, res) => {
         // Treat catalog prices as GST-inclusive customer prices
         const customerPrice = catalogItem ? catalogItem.price : (Number(item.price) || 0);
         const quantity = Number(item.quantity) || 1;
+        const itemGstPct = catalogItem ? Number(catalogItem.gstPercentage ?? serviceGstPct) : serviceGstPct;
 
         const totalInclusive = customerPrice * quantity;
-        const gst = parseFloat((totalInclusive * 0.18).toFixed(2));
+        const gst = parseFloat((totalInclusive * (itemGstPct / 100)).toFixed(2));
         const base = parseFloat((totalInclusive - gst).toFixed(2));
 
         processedServices.push({
           catalogId: item.catalogId,
           name,
           price: base,
-          gstPercentage: serviceGstPct,
+          gstPercentage: itemGstPct,
           quantity,
           gstAmount: gst,
           total: totalInclusive,
@@ -99,6 +161,23 @@ const createOrUpdateBill = async (req, res) => {
 
         vendorServiceBase += base;
         vendorServiceGST += gst;
+
+        // Vendor payout base for this add-on: catalog's own vendorPayoutBase if set, else the
+        // same flat service-split fallback used for the original service.
+        const itemVendorPayoutBase = (catalogItem && catalogItem.vendorPayoutBase > 0)
+          ? catalogItem.vendorPayoutBase * quantity
+          : parseFloat((base * (serviceSplitPct / 100)).toFixed(2));
+
+        addonServiceSettlements.push(settleServiceLine({
+          itemTotal: totalInclusive,
+          vendorPayoutBase: itemVendorPayoutBase,
+          gstPct: itemGstPct,
+          gstIncluded: true,
+          sgstPct: catalogItem ? Number(catalogItem.vendorSgstPercentage ?? 2.5) : 2.5,
+          cgstPct: catalogItem ? Number(catalogItem.vendorCgstPercentage ?? 2.5) : 2.5,
+          platformCommPct: catalogItem ? Number(catalogItem.platformCommission ?? globalPlatformCommPct) : globalPlatformCommPct,
+          levelCommPct: catalogItem ? Number(pickLevelCommission(catalogItem, vendorCurrentLevel, globalLevelCommPct)) : globalLevelCommPct
+        }));
       }
     }
 
@@ -220,71 +299,86 @@ const createOrUpdateBill = async (req, res) => {
     if (packageVendorPayout === 0 && booking.serviceId) {
       const pricings = await PricingConfig.find({ serviceId: booking.serviceId });
       if (pricings.length > 0) {
-        if (booking.cityId) {
+        if (booking.zoneId) {
+          pricing = pricings.find(p => p.zoneId && String(p.zoneId) === String(booking.zoneId));
+        }
+        if (!pricing && booking.cityId) {
           pricing = pricings.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
         }
         if (!pricing && booking.brandId) {
           pricing = pricings.find(p => p.brandId && String(p.brandId) === String(booking.brandId));
         }
         if (!pricing) {
-          pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
+          pricing = pricings.find(p => !p.zoneId && !p.cityId && !p.brandId) || pricings[0];
         }
       }
     }
 
-    let vendorServiceEarning = 0;
+    // Original service's vendor payout BASE (before the sgst/cgst/commission cascade below).
+    let originalVendorPayoutBase = 0;
     if (packageVendorPayout > 0) {
-      vendorServiceEarning = packageVendorPayout;
+      originalVendorPayoutBase = packageVendorPayout;
     } else if (pricing) {
-      vendorServiceEarning = pricing.vendorPayoutBase !== undefined && pricing.vendorPayoutBase !== null ? pricing.vendorPayoutBase : 0;
+      originalVendorPayoutBase = pricing.vendorPayoutBase !== undefined && pricing.vendorPayoutBase !== null ? pricing.vendorPayoutBase : 0;
     } else {
-      vendorServiceEarning = parseFloat((originalServiceBaseForBill * (serviceSplitPct / 100)).toFixed(2));
+      originalVendorPayoutBase = parseFloat((originalServiceBaseForBill * (serviceSplitPct / 100)).toFixed(2));
     }
 
-    // Add vendor's instant booking markup share if applicable
+    // Settle the original service through the SAME cascade as every add-on service — sgst/cgst
+    // + platform commission (off the base) → level commission (off what's left) → vendor's net.
+    // This closes the gap where a booking with add-ons used to skip this cascade entirely for
+    // its own original service and just hand the vendor the raw, undiminished payout base.
+    const originalItemTotal = parseFloat((originalServiceBaseForBill + originalGST).toFixed(2));
+    const originalSettlement = settleServiceLine({
+      itemTotal: originalItemTotal,
+      vendorPayoutBase: originalVendorPayoutBase,
+      gstPct: pricing ? Number(pricing.gstPercentage ?? serviceGstPct) : serviceGstPct,
+      gstIncluded: pricing ? (pricing.gstIncluded !== false) : true,
+      sgstPct: pricing ? Number(pricing.vendorSgstPercentage ?? 2.5) : 2.5,
+      cgstPct: pricing ? Number(pricing.vendorCgstPercentage ?? 2.5) : 2.5,
+      platformCommPct: pricing ? Number(pricing.platformCommission ?? globalPlatformCommPct) : globalPlatformCommPct,
+      levelCommPct: pricing ? Number(pickLevelCommission(pricing, vendorCurrentLevel, globalLevelCommPct)) : globalLevelCommPct
+    });
+
+    // Add vendor's instant booking markup share if applicable — a flat bonus on top of the
+    // cascade above, not itself subject to sgst/cgst/commission.
     let vendorInstantMarkupShare = 0;
     if (booking.bookingType === 'instant') {
       vendorInstantMarkupShare = settings?.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
-      vendorServiceEarning = parseFloat((vendorServiceEarning + vendorInstantMarkupShare).toFixed(2));
     }
 
-    // Add extra services vendor earnings (using catalog vendorPayoutBase if configured)
-    let extraServicesEarning = 0;
-    if (services && Array.isArray(services)) {
-      const PricingConfig = require('../../models/PricingConfig');
-      for (const item of services) {
-        let catalogItem = null;
-        let itemPricing = null;
-        if (item.catalogId) {
-          catalogItem = await VendorServiceCatalog.findById(item.catalogId);
-          if (!catalogItem) {
-            // It might be a regular Service
-            const pricings = await PricingConfig.find({ serviceId: item.catalogId });
-            if (pricings.length > 0) {
-              if (booking.cityId) itemPricing = pricings.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
-              if (!itemPricing && booking.brandId) itemPricing = pricings.find(p => p.brandId && String(p.brandId) === String(booking.brandId));
-              if (!itemPricing) itemPricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
-            }
-          }
-        }
-        const qty = Number(item.quantity) || 1;
-        if (catalogItem && catalogItem.vendorPayoutBase !== undefined && catalogItem.vendorPayoutBase > 0) {
-          extraServicesEarning += catalogItem.vendorPayoutBase * qty;
-        } else if (itemPricing && itemPricing.vendorPayoutBase !== undefined && itemPricing.vendorPayoutBase !== null) {
-          extraServicesEarning += itemPricing.vendorPayoutBase * qty;
-        } else {
-          const unitPrice = catalogItem ? catalogItem.price : (Number(item.price) || 0);
-          extraServicesEarning += parseFloat(((unitPrice * qty) * (serviceSplitPct / 100)).toFixed(2));
-        }
-      }
-    }
-    vendorServiceEarning = parseFloat((vendorServiceEarning + extraServicesEarning).toFixed(2));
+    let vendorServiceEarning = parseFloat((originalSettlement.vendorEarning + vendorInstantMarkupShare).toFixed(2));
 
-    // Parts earnings (partsSplitPct)
+    // Fold in every add-on service's settlement (computed alongside processedServices above).
+    let vendorServiceSgst = originalSettlement.sgstAmount;
+    let vendorServiceCgst = originalSettlement.cgstAmount;
+    let platformCommissionAmount = originalSettlement.platformCommissionAmount;
+    let levelCommissionAmount = originalSettlement.levelCommissionAmount;
+    let adminMarginGross = originalSettlement.adminMarginGross;
+    let adminMarginGst = originalSettlement.adminMarginGst;
+    let adminMarginNet = originalSettlement.adminMarginNet;
+
+    addonServiceSettlements.forEach(s => {
+      vendorServiceEarning = parseFloat((vendorServiceEarning + s.vendorEarning).toFixed(2));
+      vendorServiceSgst = parseFloat((vendorServiceSgst + s.sgstAmount).toFixed(2));
+      vendorServiceCgst = parseFloat((vendorServiceCgst + s.cgstAmount).toFixed(2));
+      platformCommissionAmount = parseFloat((platformCommissionAmount + s.platformCommissionAmount).toFixed(2));
+      levelCommissionAmount = parseFloat((levelCommissionAmount + s.levelCommissionAmount).toFixed(2));
+      adminMarginGross = parseFloat((adminMarginGross + s.adminMarginGross).toFixed(2));
+      adminMarginGst = parseFloat((adminMarginGst + s.adminMarginGst).toFixed(2));
+      adminMarginNet = parseFloat((adminMarginNet + s.adminMarginNet).toFixed(2));
+    });
+
+    // Parts earnings (partsSplitPct) — kept as a flat split; parts are physical materials with
+    // their own per-item GST%, not run through the sgst/cgst/commission cascade like labour.
     const vendorPartsEarning = parseFloat((totalPartsBase * (partsSplitPct / 100)).toFixed(2));
 
     const vendorTotalEarning = parseFloat((vendorServiceEarning + vendorPartsEarning).toFixed(2));
     const companyRevenue = parseFloat((grandTotal - vendorTotalEarning).toFixed(2));
+
+    // Clean admin-facing totals: what was originally booked vs what got added on site.
+    const totalServiceCharge = originalServiceBaseForBill;
+    const totalAddonCharge = parseFloat((vendorServiceBase + totalPartsBase).toFixed(2));
 
     // ═══════════════════════════════════════
     // 6. ALL SERVICES (original + vendor-added)
@@ -334,6 +428,16 @@ const createOrUpdateBill = async (req, res) => {
       vendorTotalEarning,
       vendorInstantMarkupEarning: vendorInstantMarkupShare,
       companyRevenue,
+      // Clean admin-facing breakdown — see model comments for what each figure represents.
+      vendorServiceSgst,
+      vendorServiceCgst,
+      platformCommissionAmount,
+      levelCommissionAmount,
+      adminMarginGross,
+      adminMarginGst,
+      adminMarginNet,
+      totalServiceCharge,
+      totalAddonCharge,
       applyPartsGST,
       status: BILL_STATUS.GENERATED,
       generatedAt: new Date(),
@@ -382,6 +486,18 @@ const createOrUpdateBill = async (req, res) => {
         grandTotal,
         vendorTotalEarning,
         companyRevenue,
+        // Clean summary for the admin panel: what the customer paid, split by originally-booked
+        // vs added-on-site, plus the admin's own margin net of its GST.
+        adminSummary: {
+          customerPaid: grandTotal,
+          totalServiceCharge,
+          totalAddonCharge,
+          totalGST,
+          vendorProfit: vendorTotalEarning,
+          adminMarginGross,
+          adminMarginGst,
+          adminProfit: adminMarginNet
+        },
         breakdown: {
           serviceBase: totalServiceBaseForBill,
           partsBase: totalPartsBase,

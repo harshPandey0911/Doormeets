@@ -94,42 +94,7 @@ const PremiumCategoryPage = () => {
     const cached = apiCache.get(cacheKey);
     return (cached && cached.success && Array.isArray(cached.subCategories)) ? cached.subCategories : [];
   });
-  const [services, setServices] = useState(() => {
-    const activeCategoryId = location.state?.category?.id || location.state?.category?._id;
-    const cityId = currentCity?._id || currentCity?.id || localStorage.getItem('selectedCityId');
-    if (!activeCategoryId) return [];
-    const queryParams = new URLSearchParams();
-    queryParams.append('categoryId', activeCategoryId);
-    if (cityId) queryParams.append('cityId', cityId);
-    const cacheKey = `public:services:${queryParams.toString()}`;
-    const cached = apiCache.get(cacheKey);
-    return (cached && cached.success && Array.isArray(cached.services)) ? cached.services.map((service, index) => ({
-      id: service.id || service._id || `service-${index}`,
-      title: service.title,
-      description: service.description || '',
-      image: toAssetUrl(service.icon || service.image) || getServiceDummyImage(service.title),
-      rating: service.rating || 4.8,
-      reviews: service.reviewCount || 120,
-      price: service.discountPrice || service.basePrice || service.price || 0,
-      originalPrice: service.basePrice || null,
-      features: service.features || [],
-      brandId: service.brandId,
-      subCategoryId: (() => {
-        const val = service.subCategoryId || (service.subCategory && (service.subCategory._id || service.subCategory.id));
-        if (!val) return 'other';
-        if (typeof val === 'object') {
-          return String(val._id || val.id || val);
-        }
-        return String(val);
-      })(),
-      vendorId: service.vendorId,
-      variants: service.variants || [],
-      packages: service.packages || [],
-      serviceGroups: service.serviceGroups || [],
-      serviceType: service.serviceType || 'package_base',
-      workflow: service.workflow || null
-    })) : [];
-  });
+  const [services, setServices] = useState([]);
 
   // Loading states
   const [loading, setLoading] = useState(() => {
@@ -302,7 +267,7 @@ const PremiumCategoryPage = () => {
           image: toAssetUrl(service.icon || service.image) || getServiceDummyImage(service.title),
           rating: service.rating || 4.8,
           reviews: service.reviewCount || 120,
-          price: service.discountPrice || service.basePrice || service.price || 0,
+          price: service.price ?? service.basePrice ?? service.discountPrice ?? 0,
           originalPrice: service.basePrice || null,
           features: service.features || [],
           brandId: service.brandId,

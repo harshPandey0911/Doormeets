@@ -62,9 +62,9 @@ const pricingConfigSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
-  cityId: {
+  zoneId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'City',
+    ref: 'Zone',
     default: null,
     index: true
   },
@@ -153,6 +153,10 @@ const pricingConfigSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true
@@ -160,7 +164,7 @@ const pricingConfigSchema = new mongoose.Schema({
 
 // Unique combination index
 pricingConfigSchema.index(
-  { categoryId: 1, subCategoryId: 1, serviceId: 1, brandId: 1, cityId: 1, packageTitle: 1, variantId: 1 },
+  { categoryId: 1, subCategoryId: 1, serviceId: 1, brandId: 1, zoneId: 1, packageTitle: 1, variantId: 1 },
   { unique: true }
 );
 
@@ -186,11 +190,16 @@ pricingConfigSchema.post('save', async function(doc) {
     }
 
     // New Price Matrix model calculations for vendorProfit sync
+    // NOTE: platformCommission (not the legacy commissionPercentage field) is the field
+    // actually applied to real money in services/commissionService.js at booking completion.
+    // Reading commissionPercentage here would silently disagree with the real payout whenever
+    // the two fields diverge (e.g. after the global commission rate changes and this record
+    // isn't re-saved) — so this preview must read the same field the real calculation uses.
     const vPayoutBase = doc.vendorPayoutBase || 0;
     const vSgstPct = doc.vendorSgstPercentage || 2.5;
     const vCgstPct = doc.vendorCgstPercentage || 2.5;
     const vTdsPct = doc.vendorTdsPercentage || 0;
-    const vCommPct = doc.commissionPercentage || 10;
+    const vCommPct = doc.platformCommission || 0;
 
     const sgstAmount = vPayoutBase * (vSgstPct / 100);
     const cgstAmount = vPayoutBase * (vCgstPct / 100);
@@ -207,6 +216,7 @@ pricingConfigSchema.post('save', async function(doc) {
         subCategoryId: doc.subCategoryId,
         serviceId: doc.serviceId,
         brandId: doc.brandId,
+        zoneId: doc.zoneId || null,
         cityId: doc.cityId,
         variantId: doc.variantId || null
       },
@@ -215,6 +225,7 @@ pricingConfigSchema.post('save', async function(doc) {
         subCategoryId: doc.subCategoryId,
         serviceId: doc.serviceId,
         brandId: doc.brandId,
+        zoneId: doc.zoneId || null,
         cityId: doc.cityId,
         variantId: doc.variantId || null,
         basePrice: Number(taxableAmount.toFixed(2)),
@@ -241,6 +252,7 @@ pricingConfigSchema.post('findOneAndDelete', async function(doc) {
         subCategoryId: doc.subCategoryId,
         serviceId: doc.serviceId,
         brandId: doc.brandId,
+        zoneId: doc.zoneId || null,
         cityId: doc.cityId,
         variantId: doc.variantId || null
       });

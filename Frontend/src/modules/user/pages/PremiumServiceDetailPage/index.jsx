@@ -1456,8 +1456,7 @@ const PremiumServiceDetailPage = () => {
         )}
 
         {/* Service Variants styled like the features grid */}
-
-
+        {renderVariantsList()}
         {/* Pricing / Duration Base */}
 
         {service?.serviceType === 'minute_base' && (
@@ -1759,8 +1758,6 @@ const PremiumServiceDetailPage = () => {
             </div>
           </section>
         )}
-
-        {renderVariantsList()}
 
         {fields.filter(f => f.showToUser !== false).length > 0 && (
           <section className="mt-3 py-2 px-1">
@@ -2636,7 +2633,11 @@ const PremiumServiceDetailPage = () => {
                               </div>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="font-bold text-xs md:text-sm" style={{ color: 'var(--primary)' }}>₹{item.price}</span>
+                              {Number(item.price) > 0 ? (
+                                <span className="font-bold text-xs md:text-sm" style={{ color: 'var(--primary)' }}>₹{item.price}</span>
+                              ) : (
+                                <span />
+                              )}
                               {qty > 0 ? (
                                 <div className="flex items-center gap-1.5 md:gap-2 border border-violet-200 dark:border-zinc-700 bg-violet-50/50 dark:bg-zinc-800/40 rounded-lg px-1.5 md:px-2 py-0.5">
                                   <button onClick={(e) => { e.stopPropagation(); handleDecreaseSubItem(item); }} className="text-[#B33A35] font-extrabold text-xs md:text-sm hover:scale-110 active:scale-95 px-1 cursor-pointer">-</button>
@@ -2676,7 +2677,9 @@ const PremiumServiceDetailPage = () => {
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-2 shrink-0">
-                            <span className="font-bold text-sm" style={{ color: 'var(--primary)' }}>₹{item.price}</span>
+                            {Number(item.price) > 0 && (
+                              <span className="font-bold text-sm" style={{ color: 'var(--primary)' }}>₹{item.price}</span>
+                            )}
                             {qty > 0 ? (
                               <div className="flex items-center gap-2 border border-violet-200 dark:border-zinc-700 bg-violet-50/50 dark:bg-zinc-800/40 rounded-lg px-2 py-0.5 shrink-0">
                                 <button onClick={(e) => { e.stopPropagation(); handleDecreaseSubItem(item); }} className="text-[#B33A35] font-extrabold text-sm hover:scale-110 active:scale-95 px-1.5 cursor-pointer">-</button>

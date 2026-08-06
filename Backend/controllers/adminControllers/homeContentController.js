@@ -9,8 +9,8 @@ const { validationResult } = require('express-validator');
  */
 const getHomeContent = async (req, res) => {
   try {
-    const { cityId } = req.query;
-    let homeContent = await HomeContent.getHomeContent(cityId);
+    const { cityId, zoneId } = req.query;
+    let homeContent = await HomeContent.getHomeContent(cityId, zoneId);
 
     // Populate featuredSections items with actual Brand/Category data
     const populatedSections = await Promise.all(
@@ -119,10 +119,10 @@ const updateHomeContent = async (req, res) => {
       });
     }
 
-    const { cityId } = req.query;
+    const { cityId, zoneId } = req.query;
 
     // Use static method to ensure we get the correct doc (or create if needed)
-    let homeContent = await HomeContent.getHomeContent(cityId);
+    let homeContent = await HomeContent.getHomeContent(cityId, zoneId);
 
     // Helper to sanitize array items
     const sanitizeItems = (items) => {

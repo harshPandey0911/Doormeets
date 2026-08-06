@@ -364,14 +364,17 @@ class BookingScheduler {
           const pricings = await PricingConfig.find({ serviceId: serviceIdStr });
           let pricing = null;
           if (pricings.length > 0) {
-            if (populatedBooking.cityId) {
+            if (populatedBooking.zoneId) {
+              pricing = pricings.find(p => p.zoneId && String(p.zoneId) === String(populatedBooking.zoneId));
+            }
+            if (!pricing && populatedBooking.cityId) {
               pricing = pricings.find(p => p.cityId && String(p.cityId) === String(populatedBooking.cityId));
             }
             if (!pricing && populatedBooking.brandId) {
               pricing = pricings.find(p => p.brandId && String(p.brandId) === String(populatedBooking.brandId));
             }
             if (!pricing) {
-              pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
+              pricing = pricings.find(p => !p.zoneId && !p.cityId && !p.brandId) || pricings[0];
             }
           }
           let acceptanceFee = 0;

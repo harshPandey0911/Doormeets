@@ -194,52 +194,20 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
         </div>
 
         {/* Absolute Add Button / Open Button centered at the bottom overlap */}
-        {service.serviceType === 'package_base' && service.packages && service.packages.length > 0 ? (
-          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpen?.(service);
-              }}
-              className="w-[72px] h-[28px] md:w-[84px] md:h-[32px] bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs md:text-sm shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center"
-              style={{ color: '#B33A35' }}
-            >
-              <span>Open</span>
-            </button>
-          </div>
-        ) : (
-          (!service.variants || service.variants.length === 0) && (
-            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10">
-              {quantity > 0 ? (
-                <div 
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-[72px] h-[28px] md:w-[84px] md:h-[32px] bg-white dark:bg-zinc-900 border border-violet-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs md:text-sm shadow-md flex items-center justify-between px-1.5"
-                >
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDecrease(service);
-                    }}
-                    className="w-5 h-5 md:w-6 md:h-6 hover:bg-violet-100 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-sm md:text-base"
-                  >
-                    -
-                  </button>
-                  <span className="font-extrabold text-[11px] md:text-xs">{quantity}</span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onIncrease(service);
-                    }}
-                    className="w-5 h-5 md:w-6 md:h-6 hover:bg-violet-100 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-sm md:text-base"
-                  >
-                    +
-                  </button>
-                </div>
-              ) : (
+        {(() => {
+          const hasVariants = Array.isArray(service.variants) && service.variants.length > 0;
+          const hasPackages = Array.isArray(service.packages) && service.packages.length > 0;
+          const hasSubItems = hasVariants || hasPackages;
+
+          if (hasSubItems) {
+            // Service has variants or packages: Show "Add +" button that opens the service detail page
+            return (
+              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10">
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onAdd(service);
+                    onOpen?.(service);
                   }}
                   className="w-[72px] h-[28px] md:w-[84px] md:h-[32px] bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs md:text-sm shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-0.5"
                   style={{ color: '#B33A35' }}
@@ -247,10 +215,57 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
                   <span>Add</span>
                   <span className="text-[10px] md:text-xs font-semibold">+</span>
                 </button>
+              </div>
+            );
+          }
+
+          // Service has NO variants and NO packages: Direct Add to Cart / Quantity controls
+          return (
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10">
+              {quantity > 0 ? (
+                <div 
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-[72px] h-[28px] md:w-[84px] md:h-[32px] bg-white dark:bg-zinc-900 border border-violet-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs md:text-sm shadow-md flex items-center justify-between px-1.5"
+                >
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDecrease?.(service);
+                    }}
+                    className="w-5 h-5 md:w-6 md:h-6 hover:bg-violet-100 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-sm md:text-base cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="font-extrabold text-[11px] md:text-xs">{quantity}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onIncrease?.(service);
+                    }}
+                    className="w-5 h-5 md:w-6 md:h-6 hover:bg-violet-100 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-sm md:text-base cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAdd?.(service);
+                  }}
+                  className="w-[72px] h-[28px] md:w-[84px] md:h-[32px] bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs md:text-sm shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-0.5 cursor-pointer"
+                  style={{ color: '#B33A35' }}
+                >
+                  <span>Add</span>
+                  <span className="text-[10px] md:text-xs font-semibold">+</span>
+                </button>
               )}
             </div>
-          )
-        )}
+          );
+        })()}
       </div>
     </motion.article>
   );

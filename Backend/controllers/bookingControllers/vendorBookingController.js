@@ -466,14 +466,17 @@ const acceptBooking = async (req, res) => {
     if (booking.serviceId) {
       const pricings = await PricingConfig.find({ serviceId: booking.serviceId });
       if (pricings.length > 0) {
-        if (booking.cityId) {
+        if (booking.zoneId) {
+          pricing = pricings.find(p => p.zoneId && String(p.zoneId) === String(booking.zoneId));
+        }
+        if (!pricing && booking.cityId) {
           pricing = pricings.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
         }
         if (!pricing && booking.brandId) {
           pricing = pricings.find(p => p.brandId && String(p.brandId) === String(booking.brandId));
         }
         if (!pricing) {
-          pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
+          pricing = pricings.find(p => !p.zoneId && !p.cityId && !p.brandId) || pricings[0];
         }
       }
     }
@@ -559,7 +562,7 @@ const acceptBooking = async (req, res) => {
       if (vendorCredits < requiredMinCredits) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient balance to accept. You need a minimum balance of ₹${minWalletBalanceRs} (${requiredMinCredits} Credits) in your wallet.`
+          message: `Please recharge your wallet with ₹${minWalletBalanceRs} (${requiredMinCredits} Credits) — this category requires a minimum wallet balance of ₹${minWalletBalanceRs} to accept bookings.`
         });
       }
     }
