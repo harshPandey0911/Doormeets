@@ -269,9 +269,9 @@ const canAccessCity = (paramName = 'cityId') => {
  */
 const canApproveVendors = async (req, res, next) => {
   try {
-    if (!req.admin) {
+    if (!req.admin && req.user) {
       const Admin = require('../models/Admin');
-      req.admin = await Admin.findById(req.user.id);
+      req.admin = req.user.isSuperAdmin ? req.user : Admin.hydrate(req.user);
     }
 
     if (!req.admin) {
@@ -298,9 +298,9 @@ const canApproveVendors = async (req, res, next) => {
  */
 const canApproveWorkers = async (req, res, next) => {
   try {
-    if (!req.admin) {
+    if (!req.admin && req.user) {
       const Admin = require('../models/Admin');
-      req.admin = await Admin.findById(req.user.id);
+      req.admin = req.user.isSuperAdmin ? req.user : Admin.hydrate(req.user);
     }
 
     if (!req.admin) {

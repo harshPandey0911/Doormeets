@@ -593,7 +593,7 @@ const extractYouTubeId = (url) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center relative">
+    <div className="min-h-screen bg-gray-50/50 py-4 sm:py-12 px-3 sm:px-6 lg:px-8 flex flex-col justify-center relative">
       {/* Close X Button to return to Vendor Login */}
       <button
         onClick={() => {
@@ -602,18 +602,18 @@ const extractYouTubeId = (url) => {
           localStorage.removeItem('vendorData');
           navigate('/vendor/login');
         }}
-        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-9 h-9 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-all z-50 cursor-pointer text-base font-bold"
+        className="absolute top-3 right-3 sm:top-6 sm:right-6 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-all z-50 cursor-pointer text-sm sm:text-base font-bold"
         aria-label="Close to Login"
         title="Back to Vendor Login"
       >
         ✕
       </button>
 
-      <div className="max-w-4xl w-full mx-auto space-y-8">
+      <div className="max-w-4xl w-full mx-auto space-y-4 sm:space-y-8">
 
         {/* Step Indicator Header */}
         {step <= 2 && (
-          <div className="mb-8 sm:mb-12 text-center max-w-md mx-auto px-2">
+          <div className="mb-4 sm:mb-12 text-center max-w-md mx-auto px-2">
             <div className="flex items-center justify-center">
               <div className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full font-bold text-white text-xs sm:text-base z-10 transition-all ${step >= 1 ? 'bg-[#B33A35] shadow-lg shadow-[#B33A35]/20' : 'bg-gray-300'}`}>1</div>
               <div className={`h-1 w-16 sm:w-24 -ml-2 -mr-2 transition-all ${step >= 2 ? 'bg-[#B33A35]' : 'bg-gray-300'}`}></div>
@@ -628,7 +628,7 @@ const extractYouTubeId = (url) => {
 
         {/* STEP 1: Aadhaar & PAN Upload */}
         {step === 1 && (
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 sm:p-8 animate-fade-in max-w-3xl mx-auto">
+          <div className="bg-transparent sm:bg-white sm:rounded-3xl sm:shadow-xl sm:border sm:border-gray-100 p-0 sm:p-8 animate-fade-in max-w-3xl mx-auto">
             <div className="flex items-center justify-center gap-3 mb-6">
               <FiShield className="text-3xl text-[#B33A35]" />
               <h2 className="text-xl sm:text-2xl font-black text-gray-800">Identify Proof Verification</h2>
@@ -821,14 +821,14 @@ const extractYouTubeId = (url) => {
               <button
                 type="submit"
                 disabled={submittingDocs}
-                className="w-full py-4 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 text-white rounded-2xl font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-[#B33A35]/20 text-sm sm:text-base mt-8 cursor-pointer active:scale-95"
+                className="w-full py-2.5 sm:py-3.5 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 text-white rounded-xl sm:rounded-2xl font-bold transition flex items-center justify-center gap-2 shadow-md shadow-[#B33A35]/20 text-xs sm:text-base mt-4 sm:mt-6 cursor-pointer active:scale-95"
               >
                 {submittingDocs ? (
-                  <span className="w-5 h-5 border-2 border-white/35 border-t-white rounded-full animate-spin" />
+                  <span className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/35 border-t-white rounded-full animate-spin" />
                 ) : (
                   <>
                     <span>Submit Documents</span>
-                    <FiArrowRight className="w-5 h-5" />
+                    <FiArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                   </>
                 )}
               </button>
@@ -838,7 +838,7 @@ const extractYouTubeId = (url) => {
 
         {/* STEP 2: Police Verification Document Upload */}
         {step === 2 && (
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 sm:p-8 animate-fade-in max-w-2xl mx-auto text-left">
+          <div className="bg-transparent sm:bg-white sm:rounded-3xl sm:shadow-xl sm:border sm:border-gray-100 p-0 sm:p-8 animate-fade-in max-w-2xl mx-auto text-left">
             <div className="flex items-center gap-3 mb-6 justify-center">
               <FiShield className="text-3xl text-[#B33A35]" />
               <h2 className="text-xl sm:text-2xl font-black text-gray-800">Police Verification</h2>
@@ -907,26 +907,26 @@ const extractYouTubeId = (url) => {
                 </div>
               )}
 
-              <div className="flex justify-between items-center gap-3 mt-8">
+              <div className="flex flex-col-reverse sm:flex-row justify-between items-stretch gap-2 sm:gap-3 mt-4 sm:mt-8">
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="px-6 py-4 border border-gray-200 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition flex items-center gap-2 text-sm cursor-pointer"
+                  className="px-4 py-2.5 sm:py-3.5 border border-gray-200 text-gray-600 rounded-xl sm:rounded-2xl font-semibold sm:font-bold hover:bg-gray-50 transition flex items-center justify-center gap-1.5 text-xs sm:text-sm cursor-pointer"
                 >
-                  <FiArrowLeft className="w-4 h-4" />
+                  <FiArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   Back
                 </button>
                 <button
                   type="submit"
                   disabled={submittingPV}
-                  className="flex-1 py-4 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 text-white rounded-2xl font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-[#B33A35]/20 text-sm cursor-pointer active:scale-95"
+                  className="w-full sm:w-auto py-2.5 sm:py-3.5 px-6 sm:px-8 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 text-white rounded-xl sm:rounded-2xl font-semibold sm:font-bold transition flex items-center justify-center gap-2 shadow-md shadow-[#B33A35]/20 text-xs sm:text-sm cursor-pointer active:scale-95"
                 >
                   {submittingPV ? (
-                    <span className="w-5 h-5 border-2 border-white/35 border-t-white rounded-full animate-spin" />
+                    <span className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/35 border-t-white rounded-full animate-spin" />
                   ) : (
                     <>
                       <span>{pvMethod === 'admin' ? 'Proceed to Training Video' : 'Submit Certificate & Proceed'}</span>
-                      <FiArrowRight className="w-5 h-5" />
+                      <FiArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </>
                   )}
                 </button>

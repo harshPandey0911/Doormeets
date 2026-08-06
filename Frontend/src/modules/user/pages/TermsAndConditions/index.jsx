@@ -12,7 +12,7 @@ const TermsAndConditions = () => {
   useEffect(() => {
     const fetchTermsPolicy = async () => {
       try {
-        const res = await api.get('/public/settings');
+        const res = await api.get('/public/config');
         if (res.data?.success && res.data?.settings?.termsAndConditions) {
           setTermsText(res.data.settings.termsAndConditions);
         } else {

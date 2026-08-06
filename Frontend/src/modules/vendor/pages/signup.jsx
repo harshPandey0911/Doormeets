@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FiUser, FiPhone, FiBriefcase, FiArrowRight, FiChevronDown, FiCheck, FiGift } from 'react-icons/fi';
+import { FiUser, FiPhone, FiBriefcase, FiArrowRight, FiChevronDown, FiCheck, FiGift, FiX } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { vendorTheme as themeColors } from '../../../theme';
 import { register } from '../services/authService';
@@ -39,7 +39,7 @@ const VendorSignup = () => {
     
     setFetchingLegal(true);
     try {
-      const res = await api.get('/public/settings');
+      const res = await api.get('/public/config');
       if (res.data?.success && res.data?.settings) {
         setLegalContent({
           terms: res.data.settings.termsAndConditions || 'Terms and Conditions not configured.',

@@ -123,41 +123,41 @@ const AllVendors = () => {
     }
   };
 
-  const filteredVendors = useMemo(() => {
-    // Helper to resolve ObjectIds to titles
-    const resolveServiceNames = (vendor) => {
-      if (!vendor) return [];
-      const rawServices = [
-        ...(Array.isArray(vendor.service) ? vendor.service : (vendor.service ? [vendor.service] : [])),
-        ...(Array.isArray(vendor.categories) ? vendor.categories : (vendor.categories ? [vendor.categories] : []))
-      ];
+  // Helper to resolve ObjectIds to titles
+  const resolveServiceNames = (vendor) => {
+    if (!vendor) return [];
+    const rawServices = [
+      ...(Array.isArray(vendor.service) ? vendor.service : (vendor.service ? [vendor.service] : [])),
+      ...(Array.isArray(vendor.categories) ? vendor.categories : (vendor.categories ? [vendor.categories] : []))
+    ];
 
-      if (vendor.professions && Array.isArray(vendor.professions)) {
-        vendor.professions.forEach(p => {
-          if (typeof p === 'object' && p !== null && (p.title || p.name)) {
-            rawServices.push(p.title || p.name);
-          } else if (typeof p === 'string') {
-            rawServices.push(p);
-          }
-        });
-      }
-
-      if (rawServices.length === 0) return [];
-
-      const resolved = rawServices.map(s => {
-        if (!s) return null;
-        if (typeof s === 'object' && (s.title || s.name)) return s.title || s.name;
-        const sStr = String(s);
-        if (/^[0-9a-fA-F]{24}$/.test(sStr)) {
-          const cat = categories.find(c => String(c.id || c._id) === sStr);
-          return cat ? (cat.title || cat.name) : sStr;
+    if (vendor.professions && Array.isArray(vendor.professions)) {
+      vendor.professions.forEach(p => {
+        if (typeof p === 'object' && p !== null && (p.title || p.name)) {
+          rawServices.push(p.title || p.name);
+        } else if (typeof p === 'string') {
+          rawServices.push(p);
         }
-        return sStr;
       });
+    }
 
-      return [...new Set(resolved.filter(Boolean))];
-    };
+    if (rawServices.length === 0) return [];
 
+    const resolved = rawServices.map(s => {
+      if (!s) return null;
+      if (typeof s === 'object' && (s.title || s.name)) return s.title || s.name;
+      const sStr = String(s);
+      if (/^[0-9a-fA-F]{24}$/.test(sStr)) {
+        const cat = categories.find(c => String(c.id || c._id) === sStr);
+        return cat ? (cat.title || cat.name) : sStr;
+      }
+      return sStr;
+    });
+
+    return [...new Set(resolved.filter(Boolean))];
+  };
+
+  const filteredVendors = useMemo(() => {
     return vendors.map(vendor => ({
       ...vendor,
       resolvedService: resolveServiceNames(vendor)
@@ -179,6 +179,20 @@ const AllVendors = () => {
   }, [vendors, filterStatus, searchQuery, categories]);
 
   const handleApprove = async (vendorId) => {
+    const targetVendor = vendors.find(v => (v.id || v._id) === vendorId);
+    if (targetVendor && targetVendor.policeVerification?.status !== 'approved') {
+      toast.error('Police Verification must be approved first! Please approve Police Verification on the Police Verification page before approving vendor.', {
+        duration: 5000,
+        style: {
+          background: '#FEF08A',
+          color: '#854D0E',
+          border: '1px solid #FDE047'
+        },
+        icon: '⚠️'
+      });
+      return;
+    }
+
     try {
       const response = await adminVendorService.approveVendor(vendorId);
       if (response.success) {
@@ -193,7 +207,15 @@ const AllVendors = () => {
       console.error('Error approving vendor:', error);
       const msg = error.response?.data?.message || 'Failed to approve vendor. Please try again.';
       if (error.response?.data?.requiresPoliceVerification) {
-        toast.error(msg, { duration: 5000, icon: '⚠️' });
+        toast.error(msg, {
+          duration: 5000,
+          style: {
+            background: '#FEF08A',
+            color: '#854D0E',
+            border: '1px solid #FDE047'
+          },
+          icon: '⚠️'
+        });
       } else {
         toast.error(msg);
       }
