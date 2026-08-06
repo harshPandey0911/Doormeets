@@ -62,6 +62,9 @@ const PERMISSION_KEYS = [
   'manage_training',      // can manage training content
   'manage_notifications', // can send push notifications
   'propose_categories',   // can propose new categories (needs super admin approval)
+  'propose_brands',       // can propose new brands (needs super admin approval) — was
+                           // referenced by cityAdminRequestController but never defined here,
+                           // so brand proposals 403'd unconditionally for every non-super admin
   'view_reviews',
   'view_settlements',
   'view_commissions',

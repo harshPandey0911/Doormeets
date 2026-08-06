@@ -332,6 +332,7 @@ const requestSettlement = async (req, res) => {
     // Create settlement request
     const settlement = await Settlement.create({
       vendorId,
+      zoneId: vendor.zoneId || (vendor.zoneIds && vendor.zoneIds[0]) || null,
       amount,
       balanceBefore: currentDues,
       balanceAfter: currentDues - amount, // Dues will decrease
@@ -422,6 +423,7 @@ const requestWithdrawal = async (req, res) => {
 
     const withdrawal = await Withdrawal.create({
       vendorId,
+      zoneId: vendor.zoneId || (vendor.zoneIds && vendor.zoneIds[0]) || null,
       amount,
       bankDetails,
       adminNotes: notes,

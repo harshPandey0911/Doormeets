@@ -21,10 +21,19 @@ const createTicket = async (req, res) => {
       }
     }
 
+    // Best-effort zone: derive from the related booking when this ticket is about one.
+    let ticketZoneId = null;
+    if (relatedBookingId) {
+      const Booking = require('../../models/Booking');
+      const relatedBooking = await Booking.findById(relatedBookingId).select('zoneId').lean();
+      ticketZoneId = relatedBooking?.zoneId || null;
+    }
+
     const ticket = new Ticket({
       creatorRole: 'user',
       creatorId: userId,
       creatorModel: 'User',
+      zoneId: ticketZoneId,
       subject,
       category: category || 'general',
       priority: priority || 'medium',

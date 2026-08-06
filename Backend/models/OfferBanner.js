@@ -32,6 +32,13 @@ const offerBannerSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  // Zones this banner is scoped to. Empty = global (shown in every zone), same convention as
+  // Category.zoneIds. A Zone Admin creating a banner can only scope it to their own zone.
+  zoneIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone',
+    index: true
+  }],
   priority: {
     type: Number,
     default: 0

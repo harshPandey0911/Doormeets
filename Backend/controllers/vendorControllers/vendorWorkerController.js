@@ -1,4 +1,5 @@
 const Worker = require('../../models/Worker');
+const Vendor = require('../../models/Vendor');
 const Booking = require('../../models/Booking');
 const { validationResult } = require('express-validator');
 const cloudinaryService = require('../../services/cloudinaryService');
@@ -88,7 +89,9 @@ const addWorker = async (req, res) => {
     if (worker) {
       // If worker exists but has no vendor, link them and update details
       if (!worker.vendorId) {
+        const owningVendorForRelink = await Vendor.findById(vendorId).select('zoneId zoneIds').lean();
         worker.vendorId = vendorId;
+        worker.zoneId = owningVendorForRelink?.zoneId || (owningVendorForRelink?.zoneIds && owningVendorForRelink.zoneIds[0]) || null;
         worker.name = name;
         worker.email = email;
         if (aadhar) {
@@ -130,6 +133,10 @@ const addWorker = async (req, res) => {
       serviceCategoryIds = foundCategories.map(c => c._id);
     }
 
+    // Inherit the owning vendor's zone so this worker is correctly zone-scoped for admins.
+    const owningVendor = await Vendor.findById(vendorId).select('zoneId zoneIds').lean();
+    const workerZoneId = owningVendor?.zoneId || (owningVendor?.zoneIds && owningVendor.zoneIds[0]) || null;
+
     // Create worker
     worker = await Worker.create({
       name,
@@ -140,6 +147,7 @@ const addWorker = async (req, res) => {
         document: aadharUrl
       },
       vendorId,
+      zoneId: workerZoneId,
       serviceCategories: serviceCategoryIds,
       address: address || {},
       status: WORKER_STATUS.ACTIVE

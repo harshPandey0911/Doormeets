@@ -364,16 +364,6 @@
     "children": []
   },
   {
-    "title": "Approval Dashboard",
-    "route": "/admin/approvals",
-    "section": "SYSTEM MANAGEMENT",
-    "allowedRoles": [
-      "super_admin",
-      "SUPER_ADMIN"
-    ],
-    "children": []
-  },
-  {
     "title": "Admin Management",
     "route": "/admin/admin-management",
     "section": "SYSTEM MANAGEMENT",
@@ -382,7 +372,7 @@
       "SUPER_ADMIN"
     ],
     "children": [
-      "City Admins",
+      "Zone Admins",
       "Pending Proposals"
     ]
   }

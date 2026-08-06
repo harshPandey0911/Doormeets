@@ -26,6 +26,15 @@ const transactionSchema = new mongoose.Schema({
     ref: 'ShopOwner',
     default: null
   },
+  // Zone this transaction belongs to — copied from the related Booking.zoneId (or the vendor's
+  // zone for vendor-initiated transactions with no booking, e.g. withdrawals) at creation time,
+  // so a Zone Admin's payment/finance views can be scoped without joining back to Booking.
+  zoneId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone',
+    default: null,
+    index: true
+  },
   type: {
     type: String,
     enum: ['credit', 'debit', 'refund', 'withdrawal', 'commission', 'cash_collected', 'settlement', 'worker_payment', 'earnings_credit', 'tds_deduction', 'payment', 'platform_fee', 'convenience_fee', 'gst', 'penalty', 'cash_collection', 'online_collection', 'shop_referral_earned', 'booking_acceptance'],

@@ -300,6 +300,17 @@ const bookingSchema = new mongoose.Schema({
     lng: { type: Number, default: null }
   },
 
+  // The service zone this booking's address resolves into, set once at creation from the
+  // customer's coordinates (never trust a client-supplied zoneId). Single source of truth for
+  // every zone-scoped admin query (dashboard, reports, transactions, reviews, etc.) — see
+  // utils/adminFilterHelper.js.
+  zoneId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone',
+    default: null,
+    index: true
+  },
+
   // ==========================================
   // 6. SCHEDULING
   // ==========================================

@@ -25,6 +25,7 @@ const createTicket = async (req, res) => {
       creatorRole: 'vendor',
       creatorId: vendorId,
       creatorModel: 'Vendor',
+      zoneId: req.user?.zoneId || (req.user?.zoneIds && req.user.zoneIds[0]) || null,
       subject,
       category: category || 'general',
       priority: priority || 'medium',

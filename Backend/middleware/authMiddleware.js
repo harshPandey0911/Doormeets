@@ -5,6 +5,9 @@ const Worker = require('../models/Worker');
 const Admin = require('../models/Admin');
 const ShopOwner = require('../models/ShopOwner');
 const { USER_ROLES } = require('../utils/constants');
+const { getAdminZoneScope } = require('../utils/adminFilterHelper');
+
+const isAdminRole = (role) => role === USER_ROLES.ADMIN || role === 'super_admin' || role === 'admin' || role === 'ADMIN' || role === 'ZONE_ADMIN' || role === 'zone_admin' || role === 'CITY_ADMIN';
 
 const authMemoryCache = new Map();
 const CACHE_TTL_MS = 100; // 100ms micro-cache to collapse duplicate instant queries without staleness
@@ -62,6 +65,14 @@ const authenticate = async (req, res, next) => {
       req.user = { ...user, id: user._id.toString() };
       req.userId = decoded.userId;
       req.userRole = decoded.role;
+      if (isAdminRole(decoded.role)) {
+        req.admin = req.user;
+        // Every admin request gets its zone scope resolved right here, once, regardless of
+        // which route file handles it — controllers/middleware read req.zoneScope instead of
+        // each re-deriving it (and instead of trusting anything the client supplied). See
+        // utils/adminFilterHelper.getAdminZoneScope / middleware/zoneMiddleware.js.
+        req.zoneScope = await getAdminZoneScope(req.user);
+      }
       return next();
     }
 
@@ -181,8 +192,10 @@ const authenticate = async (req, res, next) => {
     // Attach user to request
     // NOTE: .lean() removes the virtual .id getter — restore it manually
     req.user = { ...user, id: user._id.toString() };
-    if (decoded.role === USER_ROLES.ADMIN || decoded.role === 'super_admin' || decoded.role === 'admin' || decoded.role === 'ADMIN' || decoded.role === 'ZONE_ADMIN' || decoded.role === 'zone_admin') {
+    if (isAdminRole(decoded.role)) {
       req.admin = req.user;
+      // See comment on the cache-hit branch above — same guarantee applies here.
+      req.zoneScope = await getAdminZoneScope(req.user);
     }
     req.userId = decoded.userId;
     req.userRole = decoded.role;

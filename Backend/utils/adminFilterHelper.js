@@ -179,11 +179,51 @@ const getCityOnlyFilter = async (admin, cityField = 'address.city') => {
   return { [cityField]: { $in: config.cityNames } };
 };
 
+/**
+ * Lightweight zone-scope summary for the zone middleware and any controller that just needs
+ * "am I restricted, and to which zones" without the full city/vendor filter-building logic
+ * above. Super Admin → isSuperAdmin:true, zoneIds:[] (no restriction).
+ */
+const getAdminZoneScope = async (admin) => {
+  const config = await getAdminFilterConfig(admin);
+  return {
+    isSuperAdmin: !config.isScopedAdmin,
+    isZoneAdmin: config.isZoneAdmin,
+    zoneIds: config.zoneIds
+  };
+};
+
+/**
+ * Generic zone filter for any collection that carries a direct zoneId (or zoneIds array)
+ * field and has no bespoke helper above (Transaction, Withdrawal, Settlement, Worker, Review,
+ * Ticket, PromoCode, OfferBanner, ...). Pass includeGlobal:true for array fields that use the
+ * "empty = global/all zones" convention (e.g. Category.zoneIds, PromoCode.zoneIds).
+ */
+const getZoneMatchFilter = async (admin, zoneField = 'zoneId', { includeGlobal = false } = {}) => {
+  const config = await getAdminFilterConfig(admin);
+  if (!config.isScopedAdmin) return {}; // Super Admin — no restriction
+  if (!config.isZoneAdmin || config.zoneIds.length === 0) return { _id: null }; // scoped but no zone assigned — sees nothing
+
+  if (includeGlobal) {
+    return {
+      $or: [
+        { [zoneField]: { $in: config.zoneIds } },
+        { [zoneField]: { $exists: false } },
+        { [zoneField]: { $size: 0 } }
+      ]
+    };
+  }
+
+  return { [zoneField]: { $in: config.zoneIds } };
+};
+
 module.exports = {
   getAdminFilterConfig,
   getVendorQueryFilter,
   getWorkerQueryFilter,
   getBookingQueryFilter,
   getCityOnlyFilter,
-  getAggregateMatchFilter
+  getAggregateMatchFilter,
+  getAdminZoneScope,
+  getZoneMatchFilter
 };

@@ -63,11 +63,16 @@ const login = async (req, res) => {
         name: admin.name,
         email: admin.email,
         role: admin.role,
+        zoneId: admin.zoneId || null,
+        zoneName: admin.zoneName || '',
+        assignedZones: admin.assignedZones || [],
         assignedCities: admin.assignedCities || [],
         permissions: admin.permissions || [],
         canApproveVendors: admin.canApproveVendors || false,
         canApproveWorkers: admin.canApproveWorkers || false,
-        assignedVendors: admin.assignedVendors || []
+        assignedVendors: admin.assignedVendors || [],
+        bookingControlEnabled: admin.bookingControlEnabled || false,
+        approvalControlEnabled: admin.approvalControlEnabled || false
       },
       ...tokens
     });
@@ -144,7 +149,10 @@ const updateProfile = async (req, res) => {
 
 const getProfile = async (req, res) => {
   try {
-    const admin = await Admin.findById(req.user.id).populate('cityId', 'name');
+    const admin = await Admin.findById(req.user.id)
+      .populate('cityId', 'name')
+      .populate('zoneId', 'name')
+      .populate('assignedZones', 'name');
     if (!admin) {
       return res.status(404).json({ success: false, message: 'Admin not found' });
     }
@@ -155,11 +163,16 @@ const getProfile = async (req, res) => {
         name: admin.name,
         email: admin.email,
         role: admin.role,
+        zoneId: admin.zoneId || null,
+        zoneName: admin.zoneName || '',
+        assignedZones: admin.assignedZones || [],
         assignedCities: admin.assignedCities || [],
         permissions: admin.permissions || [],
         canApproveVendors: admin.canApproveVendors || false,
         canApproveWorkers: admin.canApproveWorkers || false,
-        assignedVendors: admin.assignedVendors || []
+        assignedVendors: admin.assignedVendors || [],
+        bookingControlEnabled: admin.bookingControlEnabled || false,
+        approvalControlEnabled: admin.approvalControlEnabled || false
       }
     });
   } catch (error) {

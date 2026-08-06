@@ -4,6 +4,7 @@ const Worker = require('../../models/Worker');
 const User = require('../../models/User');
 const Service = require('../../models/UserService');
 const { BOOKING_STATUS, PAYMENT_STATUS, VENDOR_STATUS } = require('../../utils/constants');
+const { getBookingQueryFilter, getWorkerQueryFilter, getZoneMatchFilter } = require('../../utils/adminFilterHelper');
 
 /**
  * Get Booking Report Data
@@ -15,6 +16,9 @@ exports.getBookingReport = async (req, res) => {
     if (startDate && endDate) {
       filter.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
+
+    // Zone scoping — this report had none at all before.
+    Object.assign(filter, await getBookingQueryFilter(req.user));
 
     // Status distribution
     const statusDistribution = await Booking.aggregate([
@@ -193,6 +197,11 @@ exports.getWorkerReport = async (req, res) => {
       availabilityQueryMatch.vendorId = { $ne: null };
     }
 
+    // Zone scoping — this report had none at all before. Bookings are scoped by their own
+    // zoneId; workers are scoped by their own zoneId (inherited from the owning vendor).
+    Object.assign(workerQueryMatch, await getBookingQueryFilter(req.user));
+    Object.assign(availabilityQueryMatch, await getWorkerQueryFilter(req.user));
+
     // CITY ADMIN FILTER: Restrict to assigned cities
     const City = require('../../models/City');
     let cityMatch = {};
@@ -329,12 +338,23 @@ const { getCityOnlyFilter } = require('../../utils/adminFilterHelper');
 exports.getCustomerReport = async (req, res) => {
   try {
     const cityFilter = await getCityOnlyFilter(req.user);
-    const totalUsers = await User.countDocuments(cityFilter);
-    const totalBookings = await Booking.countDocuments();
+
+    // Zone scoping — a customer has no static zoneId (they aren't tied to one place), so a
+    // Zone Admin's customer view is "customers who have at least one booking in my zone",
+    // derived via their Bookings rather than a field on User itself.
+    const bookingZoneFilter = await getZoneMatchFilter(req.user, 'zoneId');
+    let userFilter = { ...cityFilter };
+    if (Object.keys(bookingZoneFilter).length > 0) {
+      const zonedUserIds = await Booking.distinct('userId', bookingZoneFilter);
+      userFilter._id = { $in: zonedUserIds };
+    }
+
+    const totalUsers = await User.countDocuments(userFilter);
+    const totalBookings = await Booking.countDocuments(await getBookingQueryFilter(req.user));
 
     // User verification status distribution
     const verificationStatus = await User.aggregate([
-      { $match: cityFilter },
+      { $match: userFilter },
       {
         $group: {
           _id: {
@@ -357,6 +377,7 @@ exports.getCustomerReport = async (req, res) => {
 
     // Top users by bookings
     const topUsers = await Booking.aggregate([
+      { $match: await getBookingQueryFilter(req.user) },
       { $group: { _id: '$userId', bookingCount: { $sum: 1 }, totalSpent: { $sum: '$finalAmount' } } },
       { $sort: { bookingCount: -1 } },
       { $limit: 10 },
@@ -417,8 +438,11 @@ exports.getRevenueReport = async (req, res) => {
     let groupFormat = '%Y-%m';
     if (period === 'daily') groupFormat = '%Y-%m-%d';
 
+    // Zone scoping — this report had none at all before.
+    const zoneFilter = await getBookingQueryFilter(req.user);
+
     const revenueTrends = await Booking.aggregate([
-      { $match: { status: BOOKING_STATUS.COMPLETED, paymentStatus: PAYMENT_STATUS.SUCCESS } },
+      { $match: { status: BOOKING_STATUS.COMPLETED, paymentStatus: PAYMENT_STATUS.SUCCESS, ...zoneFilter } },
       {
         $group: {
           _id: { $dateToString: { format: groupFormat, date: '$completedAt' } },
@@ -431,7 +455,7 @@ exports.getRevenueReport = async (req, res) => {
 
     // Revenue by service
     const revenueByService = await Booking.aggregate([
-      { $match: { status: BOOKING_STATUS.COMPLETED } },
+      { $match: { status: BOOKING_STATUS.COMPLETED, ...zoneFilter } },
       {
         $lookup: {
           from: 'userservices',

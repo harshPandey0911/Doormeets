@@ -17,6 +17,14 @@ const withdrawalSchema = new mongoose.Schema({
     enum: ['vendor', 'worker'],
     default: 'vendor'
   },
+  // Copied from the requesting vendor's/worker's zone at creation time, so a Zone Admin's
+  // payout/withdrawal views can be scoped without joining back to Vendor.
+  zoneId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone',
+    default: null,
+    index: true
+  },
   amount: {
     type: Number,
     required: true,

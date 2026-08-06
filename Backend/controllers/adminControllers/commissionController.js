@@ -1,13 +1,15 @@
 const Booking = require('../../models/Booking');
 const mongoose = require('mongoose');
+const { getBookingQueryFilter } = require('../../utils/adminFilterHelper');
 
 /**
  * Get Admin Collection and Commission Summary
  */
 exports.getAdminCollectionSummary = async (req, res) => {
   try {
+    const zoneFilter = await getBookingQueryFilter(req.user);
     const summary = await Booking.aggregate([
-      { $match: { status: 'completed' } },
+      { $match: { status: 'completed', ...zoneFilter } },
       {
         $group: {
           _id: null,
@@ -171,6 +173,12 @@ exports.getCommissionReport = async (req, res) => {
       ];
     }
 
+    // Zone scoping — this report had none at all before.
+    const zoneFilter = await getBookingQueryFilter(req.user);
+    if (Object.keys(zoneFilter).length > 0) {
+      query.$and = (query.$and || []).concat([zoneFilter]);
+    }
+
     const bookings = await Booking.find(query)
       .populate('userId', 'name phone')
       .populate('vendorId', 'name businessName phone')
@@ -201,13 +209,15 @@ exports.getCommissionReport = async (req, res) => {
  */
 exports.getPendingVendorDues = async (req, res) => {
   try {
+    const zoneFilter = await getBookingQueryFilter(req.user);
     const dues = await Booking.aggregate([
       {
         $match: {
           status: 'completed',
           paymentMethod: 'cash',
           commissionStatus: 'pending',
-          vendorId: { $ne: null }
+          vendorId: { $ne: null },
+          ...zoneFilter
         }
       },
       {

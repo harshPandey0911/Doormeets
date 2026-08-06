@@ -30,6 +30,14 @@ const reviewSchema = new mongoose.Schema({
     ref: 'Worker',
     index: true
   },
+  // Copied from the related Booking.zoneId at creation time, so a Zone Admin's review views
+  // can be scoped without joining back to Booking.
+  zoneId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone',
+    default: null,
+    index: true
+  },
   rating: {
     type: Number,
     required: true,

@@ -80,7 +80,6 @@ const iconMap = {
   "Painting": FiGrid,
   "Instant Booking": FiZap,
   "SOS Alerts": FiShield,
-  "Approval Dashboard": FiShield,
   // Website Panel icons
   "Hero Banner": FiImage,
   "About Page": FiInfo,
@@ -191,7 +190,7 @@ const getChildRoute = (parentRoute, childName) => {
       "History": "/admin/settlements/history",
     },
     "/admin/admin-management": {
-      "City Admins": "/admin/admin-management",
+      "Zone Admins": "/admin/admin-management",
       "Pending Proposals": "/admin/admin-management/proposals"
     },
     "/admin/shop-owners": {
@@ -343,8 +342,9 @@ const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, panelMod
 
       // For City Admin & Zone Admin, check dynamic permissions
       if (isCityAdmin || isZoneAdmin) {
-        // Admin Management & Approval Dashboard are NEVER allowed for scoped Admins
-        if (item.title === 'Admin Management' || item.title === 'Approval Dashboard') return false;
+        // Admin Management (which now includes the Pending Proposals / approvals view) is
+        // NEVER allowed for scoped Admins — Super Admin only.
+        if (item.title === 'Admin Management') return false;
 
         // If there's a mapped permission key, check it
         const requiredPerm = permissionMap[item.title];

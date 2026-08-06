@@ -2,6 +2,7 @@ const Ticket = require('../../models/Ticket');
 const cloudinaryService = require('../../services/cloudinaryService');
 const Vendor = require('../../models/Vendor');
 const User = require('../../models/User');
+const { getZoneMatchFilter } = require('../../utils/adminFilterHelper');
 
 /**
  * Get all tickets (with filters)
@@ -13,6 +14,12 @@ const getAllTickets = async (req, res) => {
     const query = {};
     if (status) query.status = status;
     if (role) query.creatorRole = role;
+
+    // Zone scoping — this list had no zone filtering at all before.
+    const zoneFilter = await getZoneMatchFilter(req.user, 'zoneId');
+    if (Object.keys(zoneFilter).length > 0) {
+      Object.assign(query, zoneFilter.$or ? { $and: [zoneFilter] } : zoneFilter);
+    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 

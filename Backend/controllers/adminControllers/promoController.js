@@ -1,11 +1,12 @@
 const PromoCode = require('../../models/PromoCode');
 const Service = require('../../models/Service');
 const Category = require('../../models/Category');
+const { getZoneMatchFilter } = require('../../utils/adminFilterHelper');
 
 // Create Promo Code (Admin Only)
 exports.createPromo = async (req, res) => {
   try {
-    const { code, discountType, discountValue, expiryDate, minOrderValue, appliesTo, serviceId, categoryId, usageLimit, maxDiscountAmount, maxDiscountQty } = req.body;
+    const { code, discountType, discountValue, expiryDate, minOrderValue, appliesTo, serviceId, categoryId, usageLimit, maxDiscountAmount, maxDiscountQty, zoneIds } = req.body;
 
     if (!code || !discountType || !discountValue || !expiryDate) {
       return res.status(400).json({ success: false, message: 'Code, discount type, value and expiry date are required.' });
@@ -22,6 +23,16 @@ exports.createPromo = async (req, res) => {
     const expDate = new Date(expiryDate);
     expDate.setHours(23, 59, 59, 999);
 
+    // Zone Admin can only scope a promo to their own zone(s), never someone else's, and never
+    // leave it global (empty zoneIds) unless they explicitly have no zone assigned. Super Admin
+    // can set any zoneIds (or none, for a global promo).
+    const zoneScope = req.zoneScope;
+    let finalZoneIds = Array.isArray(zoneIds) ? zoneIds : [];
+    if (zoneScope && !zoneScope.isSuperAdmin) {
+      finalZoneIds = finalZoneIds.filter(z => zoneScope.zoneIds.includes(z.toString()));
+      if (finalZoneIds.length === 0) finalZoneIds = zoneScope.zoneIds;
+    }
+
     const promo = await PromoCode.create({
       code: uppercaseCode,
       discountType,
@@ -30,6 +41,7 @@ exports.createPromo = async (req, res) => {
       appliesTo: appliesTo || 'all',
       serviceId: serviceId || null,
       categoryId: categoryId || null,
+      zoneIds: finalZoneIds,
       expiryDate: expDate,
       usageLimit: usageLimit ? Number(usageLimit) : null,
       maxDiscountAmount: maxDiscountAmount ? Number(maxDiscountAmount) : null,
@@ -46,7 +58,13 @@ exports.createPromo = async (req, res) => {
 // Get All Promo Codes (Admin Only)
 exports.getAllPromos = async (req, res) => {
   try {
-    const promos = await PromoCode.find()
+    const query = {};
+    // Zone Admins see promos scoped to their zone + global ones (empty zoneIds), same
+    // "empty = global" convention as Category.zoneIds.
+    const zoneFilter = await getZoneMatchFilter(req.user, 'zoneIds', { includeGlobal: true });
+    if (Object.keys(zoneFilter).length > 0) Object.assign(query, zoneFilter);
+
+    const promos = await PromoCode.find(query)
       .populate('serviceId', 'title')
       .populate('categoryId', 'title')
       .sort({ createdAt: -1 });

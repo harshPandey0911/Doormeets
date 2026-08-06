@@ -35,6 +35,14 @@ const workerSchema = new mongoose.Schema({
     default: null,
     index: true
   },
+  // Copied from the owning vendor's zone at creation time, so a Zone Admin's worker views can
+  // be scoped without joining back to Vendor.
+  zoneId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone',
+    default: null,
+    index: true
+  },
   serviceCategories: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category'

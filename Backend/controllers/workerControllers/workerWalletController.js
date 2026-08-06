@@ -114,6 +114,7 @@ const requestWithdrawal = async (req, res) => {
     // Create withdrawal request
     const withdrawal = await Withdrawal.create({
       workerId,
+      zoneId: worker.zoneId || null,
       amount,
       userType: 'worker',
       bankDetails,

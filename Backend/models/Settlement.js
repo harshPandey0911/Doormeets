@@ -10,6 +10,14 @@ const settlementSchema = new mongoose.Schema({
     ref: 'Vendor',
     required: true
   },
+  // Copied from the vendor's zone at creation time, so a Zone Admin's settlement views can be
+  // scoped without joining back to Vendor.
+  zoneId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone',
+    default: null,
+    index: true
+  },
   amount: {
     type: Number,
     required: true,

@@ -268,6 +268,7 @@ const verifyPaymentWebhook = async (req, res) => {
     await Transaction.create({
       userId: booking.userId,
       bookingId: booking._id,
+      zoneId: booking.zoneId || null,
       amount: paidAmount,
       type: 'payment',
       paymentMethod: 'razorpay',
@@ -447,6 +448,7 @@ const processWalletPayment = async (req, res) => {
     await Transaction.create({
       userId,
       bookingId: booking._id,
+      zoneId: booking.zoneId || null,
       amount: booking.finalAmount,
       type: 'debit',
       paymentMethod: 'wallet',

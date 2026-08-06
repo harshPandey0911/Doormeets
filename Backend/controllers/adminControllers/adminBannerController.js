@@ -1,13 +1,17 @@
 const OfferBanner = require('../../models/OfferBanner');
 const { validationResult } = require('express-validator');
 const cloudinaryService = require('../../services/cloudinaryService');
+const { getZoneMatchFilter } = require('../../utils/adminFilterHelper');
 
 /**
  * Get all offer banners
  */
 const getOfferBanners = async (req, res) => {
   try {
-    const banners = await OfferBanner.find().sort({ priority: 1, createdAt: -1 });
+    // Zone Admins see banners scoped to their zone + global ones (empty zoneIds), same
+    // "empty = global" convention as Category.zoneIds.
+    const query = await getZoneMatchFilter(req.user, 'zoneIds', { includeGlobal: true });
+    const banners = await OfferBanner.find(query).sort({ priority: 1, createdAt: -1 });
     res.status(200).json({
       success: true,
       data: banners
@@ -26,7 +30,7 @@ const getOfferBanners = async (req, res) => {
  */
 const addOfferBanner = async (req, res) => {
   try {
-    const { title, link, targetCategoryId, slug, priority, image, mobileImage, mediaType } = req.body;
+    const { title, link, targetCategoryId, slug, priority, image, mobileImage, mediaType, zoneIds } = req.body;
 
     if (!image) {
       return res.status(400).json({ success: false, message: 'Image/Video is required' });
@@ -47,6 +51,15 @@ const addOfferBanner = async (req, res) => {
       }
     }
 
+    // Zone Admin can only scope a banner to their own zone(s), never someone else's, and never
+    // leave it global unless they have no zone assigned. Super Admin can set any zoneIds.
+    const zoneScope = req.zoneScope;
+    let finalZoneIds = Array.isArray(zoneIds) ? zoneIds : [];
+    if (zoneScope && !zoneScope.isSuperAdmin) {
+      finalZoneIds = finalZoneIds.filter(z => zoneScope.zoneIds.includes(z.toString()));
+      if (finalZoneIds.length === 0) finalZoneIds = zoneScope.zoneIds;
+    }
+
     const banner = await OfferBanner.create({
       title,
       link,
@@ -55,7 +68,8 @@ const addOfferBanner = async (req, res) => {
       priority: priority || 0,
       imageUrl: uploadRes.url,
       mobileImageUrl: mobileImageUrl || uploadRes.url, // Fallback to main image
-      mediaType: mediaType || 'image'
+      mediaType: mediaType || 'image',
+      zoneIds: finalZoneIds
     });
 
     res.status(201).json({
