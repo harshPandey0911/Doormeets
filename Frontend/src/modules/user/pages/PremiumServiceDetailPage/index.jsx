@@ -438,7 +438,15 @@ const PremiumServiceDetailPage = () => {
       }
       try {
         if (!service) setLoadingDetails(true);
-        const res = await api.get(`/public/services/${sId}/dynamic-details${cityId ? `?cityId=${cityId}` : ''}`);
+        // Pricing is configured per-zone (Zone Admin pricing matrix), not per-city — the zone must
+        // be sent or the backend can't tell which zone's price row to use and falls back to an
+        // arbitrary one, causing prices from other zones to leak in.
+        const zoneId = localStorage.getItem('user_zone_id');
+        const params = new URLSearchParams();
+        if (zoneId) params.set('zoneId', zoneId);
+        if (cityId) params.set('cityId', cityId);
+        const qs = params.toString();
+        const res = await api.get(`/public/services/${sId}/dynamic-details${qs ? `?${qs}` : ''}`);
         if (res.data.success) {
           if (res.data.service) {
             setService(prev => ({

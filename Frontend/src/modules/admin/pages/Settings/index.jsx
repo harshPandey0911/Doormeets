@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSettings, FiGrid, FiDollarSign, FiSave, FiUser, FiMail, FiTrash2, FiPlus, FiUsers, FiShield, FiFileText, FiMapPin, FiPhone, FiHeadphones, FiMessageCircle, FiEdit, FiLock, FiUnlock, FiX, FiVideo, FiUploadCloud, FiAward, FiEye, FiEyeOff, FiTwitter, FiInstagram, FiYoutube, FiLinkedin, FiLayers } from 'react-icons/fi';
-import { getSettings, updateSettings, updateAdminProfile, getAdminProfile, getAllAdmins, createAdmin, deleteAdmin, updateAdminDetails, toggleAdminStatus } from '../../services/settingsService';
+import { getSettings, updateSettings, updateAdminProfile, getAdminProfile } from '../../services/settingsService';
 import { supportService } from '../../services/supportService';
-import { cityService } from '../../services/cityService';
-import { zoneService } from '../../../../services/catalogService';
 import CityManagement from '../Cities';
 import DeletedAccountsDashboard from '../DeletedAccounts';
 import CreditPackages from './CreditPackages';
@@ -168,16 +166,9 @@ const AdminSettings = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Admin Management State
-  const [admins, setAdmins] = useState([]);
-  const [zones, setZones] = useState([]); // State for geofence zones
-  const [showAddAdmin, setShowAddAdmin] = useState(false);
-  const [newAdmin, setNewAdmin] = useState({ name: '', email: '', password: '', role: 'zone_admin', zoneId: '' });
-  const [adminLoading, setAdminLoading] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
-  const [activeView, setActiveView] = useState('main'); // 'main', 'profile', 'financial', 'system', 'admins'
+  const [activeView, setActiveView] = useState('main'); // 'main', 'profile', 'financial', 'system'
   const [activeLevelTab, setActiveLevelTab] = useState('L3');
 
   // Level configuration settings state
@@ -384,27 +375,6 @@ const AdminSettings = () => {
     loadSettings();
     loadFinancialSettings();
   }, []);
-
-  const loadAdmins = async () => {
-    try {
-      console.log('Fetching admins list...');
-      const res = await getAllAdmins();
-      console.log('Admins fetched:', res);
-      if (res.success) {
-        setAdmins(res.data || []);
-      }
-    } catch (error) {
-      console.error('Error loading admins:', error);
-    }
-  };
-
-  // Load admins and zones when entering admin view
-  useEffect(() => {
-    if (isSuperAdmin && (activeView === 'admins' || admins.length === 0)) {
-      loadAdmins();
-      loadZones();
-    }
-  }, [isSuperAdmin, activeView]);
 
   const handleToggle = (key) => {
     const updated = { ...settings, [key]: !settings[key] };
@@ -704,113 +674,9 @@ const AdminSettings = () => {
     }
   };
 
-  // Fetch zones for dropdown
-  const loadZones = async () => {
-    try {
-      const res = await zoneService.getAll();
-      if (res.success) {
-        setZones(res.zones || []);
-      }
-    } catch (error) {
-      console.error('Error loading zones:', error);
-    }
-  };
-
-  // Load admins and zones when entering admin view
-  useEffect(() => {
-    if (isSuperAdmin && (activeView === 'admins' || admins.length === 0)) {
-      loadAdmins();
-      loadZones();
-    }
-  }, [isSuperAdmin, activeView]);
-
-
-
-  const handleCreateAdmin = async (e) => {
-    e.preventDefault();
-    const isEdit = !!newAdmin.id;
-
-    if (!newAdmin.name || !newAdmin.email) {
-      return toast.error('Name and Email are required');
-    }
-    if (!isEdit && (!newAdmin.password || newAdmin.password.length < 6)) {
-      return toast.error('Password must be at least 6 characters long');
-    }
-    if (isEdit && newAdmin.password && newAdmin.password.length < 6) {
-      return toast.error('Password must be at least 6 characters long');
-    }
-
-    setAdminLoading(true);
-    try {
-      // Prepare payload
-      const payload = { 
-        ...newAdmin,
-        role: (newAdmin.role || 'ZONE_ADMIN').toUpperCase()
-      };
-      if (payload.zoneId) {
-        const zoneObj = zones.find(z => (z._id || z.id) === payload.zoneId);
-        if (zoneObj) payload.zoneName = zoneObj.name;
-      } else {
-        delete payload.zoneId;
-        payload.zoneName = '';
-      }
-
-      if (isEdit) {
-        await updateAdminDetails(newAdmin.id, payload);
-        toast.success('Zone Admin updated successfully');
-      } else {
-        await createAdmin(payload);
-        toast.success('Zone Admin created successfully');
-      }
-      setNewAdmin({ name: '', email: '', password: '', role: 'ZONE_ADMIN', zoneId: '' });
-      setShowAddAdmin(false);
-      loadAdmins();
-    } catch (error) {
-      console.error('Create admin error:', error);
-      const errMsg = error.response?.data?.message || (error.response?.data?.errors && error.response.data.errors[0]?.msg) || 'Operation failed';
-      toast.error(errMsg);
-    } finally {
-      setAdminLoading(false);
-    }
-  };
-
-  const handleEditClick = (admin) => {
-    const existingPerms = (admin.permissions || []).map(p => typeof p === 'string' ? p : p.key);
-    setNewAdmin({
-      id: admin._id,
-      name: admin.name,
-      email: admin.email,
-      role: admin.role || 'zone_admin',
-      password: '',
-      zoneId: admin.zoneId?._id || admin.zoneId || '',
-      permissions: existingPerms
-    });
-    setShowAddAdmin(true);
-  };
-
-  const handleBlockAdmin = async (id, currentStatus) => {
-    const action = currentStatus ? 'block' : 'unblock';
-    if (!window.confirm(`Are you sure you want to ${action} this admin?`)) return;
-
-    try {
-      await toggleAdminStatus(id);
-      toast.success(`Admin ${action}ed`);
-      loadAdmins();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update status');
-    }
-  };
-
-  const handleDeleteAdmin = async (id, name) => {
-    if (!window.confirm(`Delete admin "${name}"? This cannot be undone.`)) return;
-    try {
-      await deleteAdmin(id);
-      toast.success('Admin deleted');
-      loadAdmins();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete');
-    }
-  };
+  // Zone Admin creation/management used to be duplicated here — it's now handled in one place:
+  // Admin Management (Super Admin → sidebar → Admin Management). This page no longer creates,
+  // edits, or lists admins.
 
   const [serviceMode, setServiceMode] = useState('multi');
   useEffect(() => {
@@ -858,15 +724,16 @@ const AdminSettings = () => {
 
 
 
-      {/* Zone Admin Card - Super Admin Only */}
+      {/* Zone Admin creation/management now lives in exactly one place — this card is just a
+          shortcut there, not a duplicate UI (that duplicate has been removed). */}
       {isSuperAdmin && (
-        <div onClick={() => setActiveView('admins')}
+        <div onClick={() => navigate('/admin/admin-management')}
           className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
           <div className="w-12 h-12 bg-amber-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-amber-100 transition-colors">
             <FiUsers className="w-6 h-6 text-amber-600" />
           </div>
           <h3 className="text-lg font-bold text-gray-800 mb-2">Zone Admin</h3>
-          <p className="text-sm text-gray-500">Create & manage zone-specific administrators and dashboard access</p>
+          <p className="text-sm text-gray-500">Go to Admin Management to create & manage zone admins and their permissions</p>
         </div>
       )}
 
@@ -2013,213 +1880,9 @@ const AdminSettings = () => {
           )
         }
 
-        {/* Admin Management View - Super Admin Only */}
-        {
-          activeView === 'admins' && isSuperAdmin && (
-            <motion.div key="admins" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-100 rounded-lg">
-                      <FiUsers className="w-5 h-5 text-amber-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-800">Zone Admin Management</h2>
-                      <p className="text-sm text-gray-500">Create & manage zone admins for specific zones (e.g. Indore Zone) with customizable dashboard permissions</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setNewAdmin({ name: '', email: '', password: '', role: 'zone_admin', zoneId: '', permissions: [] });
-                      setShowAddAdmin(true);
-                    }}
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 cursor-pointer shadow-sm"
-                  >
-                    <FiPlus className="w-4 h-4" />
-                    <span>Create Zone Admin</span>
-                  </button>
-                </div>
-
-                {/* Add/Edit Admin Form */}
-                <AnimatePresence>
-                  {showAddAdmin && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-b border-gray-100 bg-amber-50/50">
-                      <form onSubmit={handleCreateAdmin} className="p-6">
-                        <h3 className="text-sm font-bold text-gray-800 mb-4">{newAdmin.id ? 'Edit Administrator' : 'Create New Administrator'}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4"> {/* Increased columns */}
-                          <input type="text" placeholder="Full Name" value={newAdmin.name} onChange={e => setNewAdmin(p => ({ ...p, name: e.target.value }))}
-                            className="px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200" />
-                          <input type="email" placeholder="Email Address" value={newAdmin.email} onChange={e => setNewAdmin(p => ({ ...p, email: e.target.value }))}
-                            className="px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200" />
-                          <input type="password" placeholder={newAdmin.id ? "Password (leave blank to keep)" : "Password"} value={newAdmin.password} onChange={e => setNewAdmin(p => ({ ...p, password: e.target.value }))}
-                            className="px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200" />
-
-                          {/* Role Selection */}
-                          <select value={newAdmin.role} onChange={e => setNewAdmin(p => ({ ...p, role: e.target.value }))}
-                            className="px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200">
-                            <option value="zone_admin">Zone Admin</option>
-                            <option value="super_admin">Super Admin</option>
-                            <option value="admin">Global Admin</option>
-                          </select>
-
-                          {/* Zone Selection */}
-                          <select value={newAdmin.zoneId} onChange={e => setNewAdmin(p => ({ ...p, zoneId: e.target.value }))}
-                            className="px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200">
-                            <option value="">All Geofence Zones (Global)</option>
-                            {zones.map(zone => (
-                              <option key={zone._id || zone.id} value={zone._id || zone.id}>
-                                {zone.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* Zone Admin Permissions Dashboard Visibility Toggle Checklist */}
-                        <div className="mt-4 p-4 bg-white rounded-xl border border-gray-200">
-                          <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Zone Admin Dashboard Permissions & Visibility</h4>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                            {[
-                              { key: 'view_dashboard', label: 'View Dashboard' },
-                              { key: 'view_vendors', label: 'View Vendors' },
-                              { key: 'view_workers', label: 'View Workers' },
-                              { key: 'view_users', label: 'View Users' },
-                              { key: 'view_bookings', label: 'View Bookings' },
-                              { key: 'view_payments', label: 'View Payments' },
-                              { key: 'view_reports', label: 'View Reports' },
-                              { key: 'manage_support', label: 'Manage Support' },
-                              { key: 'manage_banners', label: 'Manage Banners' },
-                              { key: 'manage_notifications', label: 'Push Notifications' }
-                            ].map(item => {
-                              const isChecked = (newAdmin.permissions || []).includes(item.key);
-                              return (
-                                <label key={item.key} className="flex items-center gap-2 cursor-pointer p-1.5 rounded hover:bg-gray-50">
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={(e) => {
-                                      const current = newAdmin.permissions || [];
-                                      const updated = e.target.checked
-                                        ? [...current, item.key]
-                                        : current.filter(k => k !== item.key);
-                                      setNewAdmin(p => ({ ...p, permissions: updated }));
-                                    }}
-                                    className="rounded text-amber-600 focus:ring-amber-500"
-                                  />
-                                  <span className="text-gray-700 font-medium">{item.label}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        <div className="flex justify-end gap-3 mt-4">
-                          <button type="button" onClick={() => setShowAddAdmin(false)} className="px-6 py-2 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-100 font-medium text-sm">
-                            Cancel
-                          </button>
-                          <button type="submit" disabled={adminLoading}
-                            className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-60 font-medium text-sm">
-                            {adminLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : (newAdmin.id ? 'Update Admin' : 'Create Admin')}
-                          </button>
-                        </div>
-                      </form>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Admins Table List */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-100">
-                        <th className="px-6 py-4 font-semibold">Administrator</th>
-                        <th className="px-6 py-4 font-semibold">Role</th>
-                        <th className="px-6 py-4 font-semibold">Assigned Zone</th>
-                        <th className="px-6 py-4 font-semibold">Status</th>
-                        <th className="px-6 py-4 font-semibold text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {admins.filter(a => a.email !== 'admin@harsh.com').map((admin) => (
-                        <tr key={admin._id} className="hover:bg-gray-50/50 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center font-bold text-gray-600 shadow-sm border border-white">
-                                {admin.name?.charAt(0).toUpperCase()}
-                              </div>
-                              <div>
-                                <p className="font-semibold text-gray-800 text-sm">{admin.name}</p>
-                                <p className="text-xs text-gray-500">{admin.email}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`px-3 py-1 text-xs font-bold rounded-full border ${admin.role === 'super_admin' || admin.role === 'SUPER_ADMIN'
-                              ? 'bg-amber-50 text-amber-700 border-amber-100'
-                              : admin.role === 'zone_admin' || admin.role === 'ZONE_ADMIN' || admin.role === 'city_admin' || admin.role === 'CITY_ADMIN' ? 'bg-teal-50 text-teal-700 border-teal-100' : 'bg-blue-50 text-blue-700 border-blue-100'
-                              }`}>
-                              {admin.role === 'super_admin' || admin.role === 'SUPER_ADMIN' ? 'Super Admin' : (admin.role === 'zone_admin' || admin.role === 'ZONE_ADMIN' || admin.role === 'city_admin' || admin.role === 'CITY_ADMIN') ? 'Zone Admin' : 'Admin'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            {admin.zoneId ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-                                {admin.zoneId.name || admin.zoneName || 'Unknown Zone'}
-                              </span>
-                            ) : admin.cityId ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-                                {admin.cityId.name || 'Assigned Zone'}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-gray-400">All Zones (Global)</span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`flex items-center gap-1.5 text-xs font-medium ${admin.isActive !== false ? 'text-green-600' : 'text-red-500'}`}>
-                              <span className={`w-2 h-2 rounded-full ${admin.isActive !== false ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                              {admin.isActive !== false ? 'Active' : 'Blocked'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            {admin._id !== profile.id && admin.email !== 'admin@admin.com' && (
-                              <div className="flex justify-end gap-2">
-                                <button onClick={() => handleEditClick(admin)}
-                                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                  title="Edit Admin">
-                                  <FiEdit className="w-4 h-4" />
-                                </button>
-
-                                <button onClick={() => handleBlockAdmin(admin._id, admin.isActive !== false)}
-                                  className={`p-2 text-gray-400 rounded-lg transition-all ${admin.isActive !== false ? 'hover:text-amber-600 hover:bg-amber-50' : 'hover:text-green-600 hover:bg-green-50'
-                                    }`}
-                                  title={admin.isActive !== false ? "Block Admin" : "Unblock Admin"}>
-                                  {admin.isActive !== false ? <FiLock className="w-4 h-4" /> : <FiUnlock className="w-4 h-4" />}
-                                </button>
-
-                                <button onClick={() => handleDeleteAdmin(admin._id, admin.name)}
-                                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                  title="Delete Admin">
-                                  <FiTrash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                      {admins.length === 0 && (
-                        <tr>
-                          <td colSpan="4" className="px-6 py-12 text-center text-gray-400">
-                            <FiUsers className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                            <p>No administrators found</p>
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </motion.div>
-          )
-        }
+        {/* Zone Admin creation/management view removed — it now lives in exactly one place:
+            Admin Management (/admin/admin-management). The "Zone Admin" card above links there
+            directly instead of duplicating the create/edit/list UI here. */}
 
         {/* Credit Packages View */}
         {activeView === 'credits' && isSuperAdmin && (

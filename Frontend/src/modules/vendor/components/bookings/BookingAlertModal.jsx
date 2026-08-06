@@ -102,6 +102,10 @@ const BookingAlertCard = ({ booking, onAccept, onReject, onAssign, maxSearchTime
 
   const isProduct = booking.serviceType === 'product' || booking.bookingType === 'product';
 
+  // A single booking can bundle several services/packages together (e.g. "Switch Repair" +
+  // "Socket Replacement" booked in one go) — show every one of them, not just the first.
+  const bookedItemsList = Array.isArray(booking.bookedItems) ? booking.bookedItems.filter(i => i?.card?.title) : [];
+
   const getBookingDisplayTitle = () => {
     if (booking.dynamicFields && booking.dynamicFields.length > 0) {
       const groupFields = booking.dynamicFields.filter(f => f.name && f.name.startsWith('Group:'));
@@ -198,9 +202,25 @@ const BookingAlertCard = ({ booking, onAccept, onReject, onAssign, maxSearchTime
 
           <div className="bg-white rounded-[1.2rem] p-4 border border-gray-100 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500" />
-            <h4 className="text-[15px] font-black text-gray-900 leading-tight">
-              {getBookingDisplayTitle()}
-            </h4>
+            {bookedItemsList.length > 1 ? (
+              <div>
+                <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{bookedItemsList.length} Services Booked</span>
+                <div className="mt-1.5 space-y-1">
+                  {bookedItemsList.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between gap-2">
+                      <span className="text-[13px] font-black text-gray-900 leading-tight truncate">{item.card?.title}</span>
+                      {Number(item.quantity) > 1 && (
+                        <span className="text-[10px] font-bold text-gray-400 shrink-0">x{item.quantity}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <h4 className="text-[15px] font-black text-gray-900 leading-tight">
+                {getBookingDisplayTitle()}
+              </h4>
+            )}
             <div className="flex items-center gap-2 mt-2">
               <span className="text-[10px] font-bold text-gray-400">Customer:</span>
               <span className="text-[10px] font-black text-gray-800 uppercase">{booking.customerName}</span>

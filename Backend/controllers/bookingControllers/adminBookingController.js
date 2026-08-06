@@ -594,6 +594,8 @@ const assignVendor = async (req, res) => {
           brandName: booking.brandName,
           brandIcon: booking.brandIcon,
           categoryIcon: booking.categoryIcon,
+          // Full list of everything booked together, same as the auto-dispatch pop-up.
+          bookedItems: booking.bookedItems || [],
           createdAt: new Date(), // Use current time for admin-assigned
           expiresAt: new Date(Date.now() + 60 * 1000).toISOString(), // 1 minute
           status: booking.status,

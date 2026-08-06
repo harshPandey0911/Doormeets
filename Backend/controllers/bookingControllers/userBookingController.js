@@ -966,43 +966,13 @@ const createBooking = async (req, res) => {
               pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
             }
           }
+          // Summed across every booked item — must match what acceptBooking actually charges.
           let acceptanceFee = 0;
           try {
             const Service = require('../../models/Service');
             const serviceDoc = await Service.findById(booking.serviceId).select('serviceType packages serviceGroups').lean();
-            if (serviceDoc && serviceDoc.serviceType === 'package_base') {
-              const bookedItemTitle = booking.bookedItems?.[0]?.card?.title;
-              if (bookedItemTitle) {
-                // 1. Check in option groups sub-items first
-                if (Array.isArray(serviceDoc.serviceGroups)) {
-                  for (const grp of serviceDoc.serviceGroups) {
-                    if (Array.isArray(grp.items)) {
-                      const matchedItem = grp.items.find(item => 
-                        bookedItemTitle === item.title || 
-                        bookedItemTitle.endsWith(` - ${item.title}`) || 
-                        bookedItemTitle.includes(item.title)
-                      );
-                      if (matchedItem) {
-                        acceptanceFee = matchedItem.vendorAcceptanceFee || 0;
-                        break;
-                      }
-                    }
-                  }
-                }
-
-                // 2. If not found, check in combo packages
-                if (acceptanceFee === 0 && Array.isArray(serviceDoc.packages) && serviceDoc.packages.length > 0) {
-                  const matchedPkg = serviceDoc.packages.find(p => 
-                    bookedItemTitle === p.title || 
-                    bookedItemTitle.endsWith(` - ${p.title}`) || 
-                    bookedItemTitle.includes(p.title)
-                  );
-                  if (matchedPkg) {
-                    acceptanceFee = matchedPkg.vendorAcceptanceFee || 0;
-                  }
-                }
-              }
-            }
+            const { calculateTotalAcceptanceFee } = require('../../utils/acceptanceFeeHelper');
+            acceptanceFee = calculateTotalAcceptanceFee(serviceDoc, booking.bookedItems);
           } catch (err) {
             console.error('[CreateBooking] Error checking sub-package acceptance fee:', err);
           }
@@ -1040,6 +1010,7 @@ const createBooking = async (req, res) => {
               brandName: booking.brandName,
               brandIcon: booking.brandIcon,
               categoryIcon: booking.categoryIcon,
+              bookedItems: booking.bookedItems || [],
               createdAt: booking.createdAt || new Date(),
               expiresAt: new Date(new Date(booking.createdAt || Date.now()).getTime() + (60 * 1000)).toISOString(),
               status: booking.status,
@@ -1070,7 +1041,8 @@ const createBooking = async (req, res) => {
                 scheduledTime: scheduledTime,
                 location: address,
                 price: finalAmount,
-                distance: vendor.distance
+                distance: vendor.distance,
+                bookedItems: booking.bookedItems || []
               },
               pushData: {
                 type: 'new_booking',

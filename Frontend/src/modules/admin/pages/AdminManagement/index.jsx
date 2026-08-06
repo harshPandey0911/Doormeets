@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiPlus, FiEdit, FiTrash2, FiX, FiCheck, FiShield, FiMapPin, FiUser, FiAlertCircle, FiClock, FiCheckCircle, FiXCircle, FiEye, FiEyeOff, FiFilter, FiLayers, FiTag } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import adminManagementService from '../../../../services/adminManagementService';
-import { cityService } from '../../services/cityService';
 import * as vendorService from '../../services/vendorService';
 import { categoryService, zoneService } from '../../../../services/catalogService';
 
@@ -101,6 +100,22 @@ const PERMISSION_KEYS = [
   { key: 'manage_promos', label: 'Manage Promo Codes', desc: 'Allows creating and managing promo codes and gift vouchers.' },
 ];
 
+// Checking a parent (e.g. "View Vendors") is supposed to grant every one of its sub-items too
+// (they're no longer individually toggleable — see the Module Permissions render below). This
+// guarantees that whenever a parent key is present, its full set of children is present with
+// it, both when loading an existing admin's saved permissions and right before saving —
+// otherwise a partially-saved parent-only record (e.g. from before this rule existed) would
+// display every child as checked without that actually being what gets persisted.
+const expandPermissions = (keys) => {
+  const set = new Set(keys);
+  PERMISSION_KEYS.forEach(perm => {
+    if (perm.children && set.has(perm.key)) {
+      perm.children.forEach(c => set.add(c.key));
+    }
+  });
+  return Array.from(set);
+};
+
 const REQUEST_TYPE_LABELS = {
   category: '📁 Category',
   brand: '🏷️ Brand',
@@ -136,11 +151,23 @@ const emptyForm = {
   approvalControlEnabled: false
 };
 
+// Small reusable ON/OFF toggle switch (used by Booking Control / Approval Control below).
+const ToggleSwitch = ({ checked, onChange }) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    onClick={() => onChange(!checked)}
+    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${checked ? 'bg-indigo-600' : 'bg-gray-300'}`}
+  >
+    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-4' : 'translate-x-1'}`} />
+  </button>
+);
+
 const AdminManagement = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [admins, setAdmins] = useState([]);
-  const [cities, setCities] = useState([]);
   const [zones, setZones] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -184,19 +211,6 @@ const AdminManagement = () => {
     } catch (err) {
       console.error('Error loading admins:', err);
       toast.error('Error loading admins: ' + (err.message || 'Unknown'));
-    }
-
-    // Load Cities
-    try {
-      const cityRes = await cityService.getAll();
-      let parsedCities = [];
-      if (Array.isArray(cityRes)) parsedCities = cityRes;
-      else if (cityRes?.cities) parsedCities = cityRes.cities;
-      else if (cityRes?.data) parsedCities = cityRes.data;
-      setCities(parsedCities);
-    } catch (err) {
-      console.error('Error loading cities:', err);
-      toast.error('Error loading cities: ' + (err.message || 'Unknown'));
     }
 
     // Load Zones
@@ -245,7 +259,7 @@ const AdminManagement = () => {
       role: admin.role,
       assignedCities: (admin.assignedCities || []).map(c => typeof c === 'object' ? c._id : c),
       assignedZones: (admin.assignedZones || []).map(z => typeof z === 'object' ? z._id : z),
-      permissions: (admin.permissions || []).filter(p => p.enabled).map(p => p.key),
+      permissions: expandPermissions((admin.permissions || []).filter(p => p.enabled).map(p => p.key)),
       assignedVendors: (admin.assignedVendors || []).map(v => typeof v === 'object' ? v._id : v),
       canApproveVendors: admin.canApproveVendors || false,
       canApproveWorkers: admin.canApproveWorkers || false,
@@ -277,7 +291,9 @@ const AdminManagement = () => {
         // the backend's single-zone lookups (e.g. Booking Control) have something to match on.
         zoneId: formData.assignedZones?.[0] || null,
         assignedVendors: formData.assignedVendors,
-        permissions: formData.permissions,
+        // Re-expand right before saving too — belt-and-braces in case formData.permissions
+        // ever gets set from somewhere other than togglePermission/openEdit.
+        permissions: expandPermissions(formData.permissions),
         canApproveVendors: formData.canApproveVendors,
         canApproveWorkers: formData.canApproveWorkers,
         bookingControlEnabled: formData.bookingControlEnabled,
@@ -428,15 +444,6 @@ const AdminManagement = () => {
     });
   };
 
-  const toggleCity = (cityId) => {
-    setFormData(prev => ({
-      ...prev,
-      assignedCities: prev.assignedCities.includes(cityId)
-        ? prev.assignedCities.filter(c => c !== cityId)
-        : [...prev.assignedCities, cityId]
-    }));
-  };
-
   const toggleVendor = (vendorId) => {
     setFormData(prev => ({
       ...prev,
@@ -455,11 +462,23 @@ const AdminManagement = () => {
     }));
   };
 
+  // A vendor belongs to a zone via its own zoneId (single) or zoneIds (array) — match either
+  // against the admin's assignedZones. This replaced the old city-name-string matching, which
+  // silently broke once the form stopped collecting Assigned Cities.
+  const vendorInAssignedZones = (vendor) => {
+    if (formData.assignedZones.length === 0) return false;
+    const vendorZoneIds = [
+      ...(vendor.zoneId ? [typeof vendor.zoneId === 'object' ? vendor.zoneId._id : vendor.zoneId] : []),
+      ...((vendor.zoneIds || []).map(z => typeof z === 'object' ? z._id : z))
+    ].map(id => id?.toString());
+    return vendorZoneIds.some(id => formData.assignedZones.includes(id));
+  };
+
   const handleSelectAllVendors = () => {
     const allFilteredVendorIds = vendors
-      .filter(v => formData.assignedCities.includes(v.address?.city ? cities.find(c => c.name.toLowerCase() === v.address.city.toLowerCase())?._id : null))
+      .filter(vendorInAssignedZones)
       .map(v => v._id);
-      
+
     if (formData.assignedVendors.length === allFilteredVendorIds.length) {
       // Deselect all
       setFormData(prev => ({ ...prev, assignedVendors: [] }));
@@ -822,29 +841,6 @@ const AdminManagement = () => {
                   </div>
                 </div>
 
-                {/* Assigned Cities - Only show if CITY_ADMIN */}
-                {formData.role !== 'SUPER_ADMIN' && formData.role !== 'super_admin' && (
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
-                    <FiMapPin className="text-blue-500" /> Assigned Cities
-                  </label>
-                  <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto p-2 border border-gray-100 rounded-lg bg-gray-50">
-                    {cities.map(city => (
-                      <label key={city._id} className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 hover:text-gray-900 p-1 rounded-lg hover:bg-white">
-                        <input
-                          type="checkbox"
-                          checked={formData.assignedCities.includes(city._id)}
-                          onChange={() => toggleCity(city._id)}
-                          className="w-3.5 h-3.5 text-blue-600 rounded"
-                        />
-                        {city.name}
-                      </label>
-                    ))}
-                    {cities.length === 0 && <p className="text-xs text-red-500 col-span-2">No cities found. Debug info: {JSON.stringify(cities)}</p>}
-                  </div>
-                </div>
-                )}
-
                 {/* Assigned Zones — this is the field that actually scopes a Zone Admin's data
                     access; the backend never trusts a client-supplied zoneId, it always derives
                     scope from these assignments on the authenticated admin. */}
@@ -877,15 +873,13 @@ const AdminManagement = () => {
                 {formData.role !== 'SUPER_ADMIN' && formData.role !== 'super_admin' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="p-3 border border-gray-100 rounded-xl bg-gray-50">
-                    <label className="flex items-center justify-between cursor-pointer">
+                    <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-gray-700">Booking Control</span>
-                      <input
-                        type="checkbox"
+                      <ToggleSwitch
                         checked={formData.bookingControlEnabled}
-                        onChange={e => setFormData(p => ({ ...p, bookingControlEnabled: e.target.checked }))}
-                        className="w-4 h-4 text-indigo-600 rounded"
+                        onChange={(val) => setFormData(p => ({ ...p, bookingControlEnabled: val }))}
                       />
-                    </label>
+                    </div>
                     <p className="text-[10px] text-gray-500 mt-1">
                       {formData.bookingControlEnabled
                         ? 'ON — every booking in this zone routes to this admin for manual vendor assignment.'
@@ -893,15 +887,13 @@ const AdminManagement = () => {
                     </p>
                   </div>
                   <div className="p-3 border border-gray-100 rounded-xl bg-gray-50">
-                    <label className="flex items-center justify-between cursor-pointer">
+                    <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-gray-700">Approval Control</span>
-                      <input
-                        type="checkbox"
+                      <ToggleSwitch
                         checked={formData.approvalControlEnabled}
-                        onChange={e => setFormData(p => ({ ...p, approvalControlEnabled: e.target.checked }))}
-                        className="w-4 h-4 text-indigo-600 rounded"
+                        onChange={(val) => setFormData(p => ({ ...p, approvalControlEnabled: val }))}
                       />
-                    </label>
+                    </div>
                     <p className="text-[10px] text-gray-500 mt-1">
                       {formData.approvalControlEnabled
                         ? 'ON — vendor/KYC/category/brand approvals apply immediately, no Super Admin review.'
@@ -911,12 +903,15 @@ const AdminManagement = () => {
                 </div>
                 )}
 
-                {/* Assigned Vendors */}
-                {formData.role !== 'SUPER_ADMIN' && formData.role !== 'super_admin' && formData.assignedCities.length > 0 && (
+                {/* Assigned Vendors — optional extra allowlist on top of Assigned Zones. Only
+                    shown once at least one zone is picked, and filtered by that vendor's own
+                    zone (not the old city-name matching, which broke once Assigned Cities was
+                    removed from this form). */}
+                {formData.role !== 'SUPER_ADMIN' && formData.role !== 'super_admin' && formData.assignedZones.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
-                        <FiShield className="text-blue-500" /> Assigned Vendors
+                        <FiShield className="text-blue-500" /> Assigned Vendors <span className="text-[10px] font-normal text-gray-400">(optional)</span>
                       </label>
                       <button
                         onClick={handleSelectAllVendors}
@@ -927,7 +922,7 @@ const AdminManagement = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border border-gray-100 rounded-lg bg-gray-50">
                       {vendors
-                        .filter(v => formData.assignedCities.includes(v.address?.city ? cities.find(c => c.name.toLowerCase() === v.address.city.toLowerCase())?._id : null))
+                        .filter(vendorInAssignedZones)
                         .map(vendor => (
                         <label key={vendor._id} className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 hover:text-gray-900 p-1 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 transition-colors">
                           <input
@@ -942,12 +937,12 @@ const AdminManagement = () => {
                           </div>
                         </label>
                       ))}
-                      {vendors.filter(v => formData.assignedCities.includes(v.address?.city ? cities.find(c => c.name.toLowerCase() === v.address.city.toLowerCase())?._id : null)).length === 0 && (
-                        <p className="text-xs text-gray-400 col-span-2 p-2">No vendors found in assigned cities.</p>
+                      {vendors.filter(vendorInAssignedZones).length === 0 && (
+                        <p className="text-xs text-gray-400 col-span-2 p-2">No vendors found in the assigned zone(s) yet.</p>
                       )}
                     </div>
                     <p className="text-[10px] text-gray-500 mt-1 italic">
-                      Note: this is optional now that Assigned Zones exists — Zone Admins already see every vendor in their assigned zone(s). Only select vendors here if you want to additionally grant access to specific vendors outside their zone.
+                      Note: this is optional — Zone Admins already see every vendor in their assigned zone(s) automatically. Only use this if you want to additionally grant access to specific vendors outside their zone.
                     </p>
                   </div>
                 )}
@@ -984,10 +979,12 @@ const AdminManagement = () => {
                    <div className="grid grid-cols-1 gap-3 p-3 border border-gray-100 rounded-xl bg-gray-50 max-h-96 overflow-y-auto">
                      {PERMISSION_KEYS.map((perm) => {
                        const isParentChecked = formData.permissions.includes(perm.key);
-                       const hasChildren = perm.children && perm.children.length > 0;
-                       
+
+                       // Only the top-level checkbox is shown — ticking it grants everything
+                       // under that module (see togglePermission / expandPermissions), but the
+                       // individual sub-items are never displayed or individually toggleable.
                        return (
-                         <div key={perm.key} className="border border-gray-200/50 rounded-xl bg-white p-3 space-y-2">
+                         <div key={perm.key} className="border border-gray-200/50 rounded-xl bg-white p-3">
                            <label className="flex items-start gap-2.5 cursor-pointer select-none">
                              <input
                                type="checkbox"
@@ -1000,30 +997,6 @@ const AdminManagement = () => {
                                {perm.desc && <span className="text-[10px] text-gray-400 mt-0.5 leading-normal">{perm.desc}</span>}
                              </div>
                            </label>
-
-                           {/* Granular Sub-permissions */}
-                           {hasChildren && isParentChecked && (
-                             <motion.div
-                               initial={{ opacity: 0, height: 0 }}
-                               animate={{ opacity: 1, height: 'auto' }}
-                               className="pl-6 border-l border-gray-200 grid grid-cols-2 gap-2 pt-2.5 bg-gray-50/50 p-2 rounded-lg"
-                             >
-                               {perm.children.map((child) => {
-                                 const isChildChecked = formData.permissions.includes(child.key);
-                                 return (
-                                   <label key={child.key} className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-white select-none border border-transparent hover:border-gray-200 transition-colors">
-                                     <input
-                                       type="checkbox"
-                                       checked={isChildChecked}
-                                       onChange={() => togglePermission(child.key)}
-                                       className="w-3.5 h-3.5 text-blue-600 rounded"
-                                     />
-                                     <span className="text-[11px] font-semibold text-gray-600">{child.label}</span>
-                                   </label>
-                                 );
-                               })}
-                             </motion.div>
-                           )}
                          </div>
                        );
                      })}

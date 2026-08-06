@@ -1124,7 +1124,10 @@ const getPublicServices = async (req, res) => {
         });
       }
 
-      // Determine cheapest price
+      // Determine cheapest price. "Starting from" must reflect the LOWEST price configured
+      // anywhere for this service in the resolved zone — the base price AND every variant/add-on
+      // — not just whichever one happens to be the base row, so a cheaper add-on (e.g. a ₹100
+      // "2 Pin" option next to a ₹150 base) is what the card actually shows.
       let cheapestPrice = 0;
 
       // 1. Try Base Pricing for exact resolvedZoneId
@@ -1143,10 +1146,6 @@ const getPublicServices = async (req, res) => {
         basePricing = pricings.find(p => p.serviceId.toString() === svc._id.toString() && (!p.variantId || p.variantId === null));
       }
 
-      if (basePricing) {
-        cheapestPrice = basePricing.customerPrice ?? basePricing.finalCustomerPrice ?? basePricing.basePrice ?? 0;
-      }
-
       // Pricing entries considered for this zone only: exact zone match, global (zoneId null),
       // or — if the zone genuinely couldn't be resolved — any zone as a last resort.
       const zoneScopedPricings = pricings.filter(p => {
@@ -1155,17 +1154,21 @@ const getPublicServices = async (req, res) => {
         return !p.zoneId || p.zoneId.toString() === resolvedZoneId.toString();
       });
 
-      if (!cheapestPrice || cheapestPrice === 0) {
-        // Fallback to variants if no base pricing is defined
-        const variantPrices = resolvedVariants.map(v => v.extraPrice).filter(price => price > 0);
-        const allPricedValues = zoneScopedPricings.map(p => p.customerPrice ?? p.finalCustomerPrice ?? p.basePrice).filter(p => Number(p) > 0);
-
-        if (variantPrices.length > 0) {
-          cheapestPrice = Math.min(...variantPrices);
-        } else if (allPricedValues.length > 0) {
-          cheapestPrice = Math.min(...allPricedValues);
-        }
+      const candidatePrices = [];
+      if (basePricing) {
+        const bp = Number(basePricing.customerPrice ?? basePricing.finalCustomerPrice ?? basePricing.basePrice ?? 0);
+        if (bp > 0) candidatePrices.push(bp);
       }
+      resolvedVariants.forEach(v => {
+        const vp = Number(v.extraPrice);
+        if (vp > 0) candidatePrices.push(vp);
+      });
+      zoneScopedPricings.forEach(p => {
+        const zp = Number(p.customerPrice ?? p.finalCustomerPrice ?? p.basePrice);
+        if (zp > 0) candidatePrices.push(zp);
+      });
+
+      cheapestPrice = candidatePrices.length > 0 ? Math.min(...candidatePrices) : 0;
 
       const cheapestPricing = basePricing || zoneScopedPricings[0];
 
@@ -2082,11 +2085,14 @@ const getPublicServiceDynamicDetails = async (req, res) => {
     if (!pricing && cityId) {
       pricing = await PricingConfig.findOne({ serviceId, cityId, zoneId: null, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
     }
-    // 3. Priority 3: Global fallback pricing
+    // 3. Priority 3: Global fallback pricing (zoneId: null, cityId: null — intentionally applies everywhere)
     if (!pricing) {
       pricing = await PricingConfig.findOne({ serviceId, zoneId: null, cityId: null, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
     }
-    if (!pricing) {
+    // 4. Last resort: grab ANY pricing row — only when the user's zone genuinely could not be
+    // resolved at all. Once a zone IS known, a price configured for a *different* zone must
+    // never leak in (that was the exact bug: Dewas showing Indore's ₹100 instead of its own ₹150).
+    if (!pricing && !targetZoneId) {
       pricing = await PricingConfig.findOne({ serviceId, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
     }
 
@@ -2181,13 +2187,16 @@ const getPublicServiceDynamicDetails = async (req, res) => {
           );
         }
         if (!variantPricing) {
-          variantPricing = pricings.find(p => 
+          variantPricing = pricings.find(p =>
             p.variantId && p.variantId.toString() === v._id.toString() &&
             !p.zoneId && !p.cityId
           );
         }
-        if (!variantPricing) {
-          variantPricing = pricings.find(p => 
+        // Last resort: grab ANY zone's price for this add-on — only when the user's zone
+        // genuinely couldn't be resolved. Once a zone IS known, another zone's add-on price
+        // (e.g. Indore's ₹100) must never leak into a Dewas customer's ₹150 add-on.
+        if (!variantPricing && !targetZoneId) {
+          variantPricing = pricings.find(p =>
             p.variantId && p.variantId.toString() === v._id.toString()
           );
         }
