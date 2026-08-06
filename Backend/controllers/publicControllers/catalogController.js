@@ -1032,7 +1032,6 @@ const getPublicServices = async (req, res) => {
 
     activeServices = Array.from(groupedServices.values());
 
-    const ServiceBrandPricing = require('../../models/ServiceBrandPricing');
     const PricingConfig = require('../../models/PricingConfig');
     const serviceIds = activeServices.map(s => s._id);
     let resolvedZoneId = (req.zone && req.zone._id) ? req.zone._id : (req.query.zoneId || null);
@@ -1059,64 +1058,51 @@ const getPublicServices = async (req, res) => {
       }
     }
 
-    const sbPricings = await ServiceBrandPricing.find({
-      serviceId: { $in: serviceIds },
-      isActive: true
-    }).lean();
-
     const configPricings = await PricingConfig.find({
       serviceId: { $in: serviceIds },
       isActive: { $ne: false }  // Accept true OR missing/undefined field
     }).lean();
 
-    // Map configPricings into unified pricing format (PricingConfig takes priority over legacy ServiceBrandPricing)
-    const pricings = [
-      ...configPricings.map(c => ({
-        serviceId: c.serviceId,
-        variantId: c.variantId || null,
-        zoneId: c.zoneId || null,
-        customerPrice: c.customerPrice,
-        finalCustomerPrice: c.customerPrice,
-        basePrice: c.customerPrice,
-        gstPercentage: c.gstPercentage || 18,
-        isActive: c.isActive !== false
-      })),
-      ...sbPricings
-    ];
+    // PricingConfig (the Price Matrix) is the only source of truth here now — legacy
+    // ServiceBrandPricing used to be blended in as a "global" fallback, but it's a derived mirror
+    // table nothing writes to directly anymore, and old rows from before the zone system existed
+    // (some literally ₹0, one a stale ₹57 for "Switch socket repair") were winning the cheapest-
+    // price comparison over correctly configured zone-specific PricingConfig rows (₹69/₹100),
+    // showing customers a bogus lower price. Mixing it in is exactly the bug: consult it here.
+    const pricings = configPricings.map(c => ({
+      serviceId: c.serviceId,
+      variantId: c.variantId || null,
+      zoneId: c.zoneId || null,
+      customerPrice: c.customerPrice,
+      finalCustomerPrice: c.customerPrice,
+      basePrice: c.customerPrice,
+      gstPercentage: c.gstPercentage || 18,
+      isActive: c.isActive !== false
+    }));
 
-    // Map pricing back to activeServices - resolve variant prices (Zone-specific first, then Global fallback)
+    // Map pricing back to activeServices - EXACT zone match only, no fallback. If admin hasn't
+    // configured a price for the customer's own resolved zone, the service isn't priced there —
+    // it gets filtered out below rather than showing a Global/legacy/other-zone price. This is a
+    // deliberate policy: any fallback tier is a potential cross-zone leak (that's exactly how a
+    // stale legacy row, or an admin-configured "Global" price never intended for this zone, ended
+    // up shown to a customer instead of the ₹100 actually configured for their own zone).
     activeServices = activeServices.map(svc => {
-      // Map variants with resolved prices
       let resolvedVariants = [];
+      const zoneExactVariantPrices = [];
       if (Array.isArray(svc.variants)) {
         resolvedVariants = svc.variants.map(v => {
-          // 1. Try Zone-specific variant pricing
           let variantPricing = null;
           if (resolvedZoneId) {
-            variantPricing = pricings.find(p => 
+            variantPricing = pricings.find(p =>
               p.serviceId.toString() === svc._id.toString() &&
               p.variantId && (p.variantId.toString() === (v._id || v.id || '').toString() || p.variantId.toString() === v.title) &&
               p.zoneId && p.zoneId.toString() === resolvedZoneId.toString()
             );
+            if (variantPricing) {
+              const zvp = Number(variantPricing.customerPrice ?? variantPricing.finalCustomerPrice ?? variantPricing.basePrice ?? 0);
+              if (zvp > 0) zoneExactVariantPrices.push(zvp);
+            }
           }
-          // 2. Fallback to Global variant pricing (zoneId: null)
-          if (!variantPricing) {
-            variantPricing = pricings.find(p => 
-              p.serviceId.toString() === svc._id.toString() &&
-              p.variantId && (p.variantId.toString() === (v._id || v.id || '').toString() || p.variantId.toString() === v.title) &&
-              (!p.zoneId || p.zoneId === null)
-            );
-          }
-          // 3. Fallback to ANY zone pricing for this variant — only when the user's zone could
-          // not be resolved at all. If a zone IS resolved, a price configured for a *different*
-          // zone must never leak in (that's exactly the price-matrix cross-zone bug).
-          if (!variantPricing && !resolvedZoneId) {
-            variantPricing = pricings.find(p =>
-              p.serviceId.toString() === svc._id.toString() &&
-              p.variantId && (p.variantId.toString() === (v._id || v.id || '').toString() || p.variantId.toString() === v.title)
-            );
-          }
-
           return {
             ...v,
             extraPrice: variantPricing ? (variantPricing.customerPrice ?? variantPricing.finalCustomerPrice ?? variantPricing.basePrice ?? 0) : 0
@@ -1124,62 +1110,36 @@ const getPublicServices = async (req, res) => {
         });
       }
 
-      // Determine cheapest price. "Starting from" must reflect the LOWEST price configured
-      // anywhere for this service in the resolved zone — the base price AND every variant/add-on
-      // — not just whichever one happens to be the base row, so a cheaper add-on (e.g. a ₹100
-      // "2 Pin" option next to a ₹150 base) is what the card actually shows.
-      let cheapestPrice = 0;
-
-      // 1. Try Base Pricing for exact resolvedZoneId
       let basePricing = null;
       if (resolvedZoneId) {
         basePricing = pricings.find(p => p.serviceId.toString() === svc._id.toString() && (!p.variantId || p.variantId === null) && p.zoneId && p.zoneId.toString() === resolvedZoneId.toString());
       }
-      // 2. Fallback to Global Base Pricing (zoneId: null)
-      if (!basePricing) {
-        basePricing = pricings.find(p => p.serviceId.toString() === svc._id.toString() && (!p.variantId || p.variantId === null) && (!p.zoneId || p.zoneId === null));
-      }
-      // 3. Fallback to ANY zone base pricing for this service — only when the user's zone could
-      // not be resolved at all. A resolved zone must stick to its own zone-specific/global price
-      // and never borrow a price configured for a different zone.
-      if (!basePricing && !resolvedZoneId) {
-        basePricing = pricings.find(p => p.serviceId.toString() === svc._id.toString() && (!p.variantId || p.variantId === null));
-      }
-
-      // Pricing entries considered for this zone only: exact zone match, global (zoneId null),
-      // or — if the zone genuinely couldn't be resolved — any zone as a last resort.
-      const zoneScopedPricings = pricings.filter(p => {
-        if (p.serviceId.toString() !== svc._id.toString()) return false;
-        if (!resolvedZoneId) return true;
-        return !p.zoneId || p.zoneId.toString() === resolvedZoneId.toString();
-      });
 
       const candidatePrices = [];
       if (basePricing) {
         const bp = Number(basePricing.customerPrice ?? basePricing.finalCustomerPrice ?? basePricing.basePrice ?? 0);
         if (bp > 0) candidatePrices.push(bp);
       }
-      resolvedVariants.forEach(v => {
-        const vp = Number(v.extraPrice);
-        if (vp > 0) candidatePrices.push(vp);
-      });
-      zoneScopedPricings.forEach(p => {
-        const zp = Number(p.customerPrice ?? p.finalCustomerPrice ?? p.basePrice);
-        if (zp > 0) candidatePrices.push(zp);
-      });
+      zoneExactVariantPrices.forEach(vp => candidatePrices.push(vp));
 
-      cheapestPrice = candidatePrices.length > 0 ? Math.min(...candidatePrices) : 0;
-
-      const cheapestPricing = basePricing || zoneScopedPricings[0];
+      const cheapestPrice = candidatePrices.length > 0 ? Math.min(...candidatePrices) : 0;
 
       return {
         ...svc,
         price: cheapestPrice,
         basePrice: cheapestPrice, // Present final exact customer price as basePrice for user app
         variants: resolvedVariants,
-        gstPercentage: cheapestPricing ? (cheapestPricing.gstPercentage || 18) : 18
+        gstPercentage: basePricing ? (basePricing.gstPercentage || 18) : 18,
+        // No zone-exact price configured at all for this service — hide it rather than showing
+        // any fallback/other-zone price.
+        _hasZonePricing: cheapestPrice > 0
       };
     });
+
+    // A service with no price configured for the customer's own zone doesn't get shown there.
+    if (resolvedZoneId) {
+      activeServices = activeServices.filter(svc => svc._hasZonePricing);
+    }
 
     // Fetch workflow data for multi_visit services
     const multiVisitServiceIds = activeServices
@@ -2077,23 +2037,11 @@ const getPublicServiceDynamicDetails = async (req, res) => {
     const PricingConfig = require('../../models/PricingConfig');
     let pricing = null;
 
-    // 1. Priority 1: Zone-specific pricing
+    // Exact zone match only — no Global/city/any-zone fallback. If admin hasn't configured a
+    // price for the customer's own resolved zone, this service simply has no price here (handled
+    // below by falling back to the service's own default fields, never another zone's price).
     if (targetZoneId) {
       pricing = await PricingConfig.findOne({ serviceId, zoneId: targetZoneId, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
-    }
-    // 2. Priority 2: City-specific pricing
-    if (!pricing && cityId) {
-      pricing = await PricingConfig.findOne({ serviceId, cityId, zoneId: null, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
-    }
-    // 3. Priority 3: Global fallback pricing (zoneId: null, cityId: null — intentionally applies everywhere)
-    if (!pricing) {
-      pricing = await PricingConfig.findOne({ serviceId, zoneId: null, cityId: null, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
-    }
-    // 4. Last resort: grab ANY pricing row — only when the user's zone genuinely could not be
-    // resolved at all. Once a zone IS known, a price configured for a *different* zone must
-    // never leak in (that was the exact bug: Dewas showing Indore's ₹100 instead of its own ₹150).
-    if (!pricing && !targetZoneId) {
-      pricing = await PricingConfig.findOne({ serviceId, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
     }
 
     let resolvedService = { ...service };
@@ -2157,47 +2105,26 @@ const getPublicServiceDynamicDetails = async (req, res) => {
     const pricingRules = await PricingRule.find({ serviceId }).lean();
     const pageBlocks = await ServicePageBlock.find({ serviceId, isVisible: true }).sort({ order: 1 }).lean();
 
-    // Resolve variant-specific prices from PricingConfig and ServiceBrandPricing
-    const sbpPricings = await ServiceBrandPricing.find({
-      serviceId,
-      isActive: true
-    }).lean();
-    const pcPricings = await PricingConfig.find({
+    // Resolve variant-specific prices — PricingConfig only, no legacy ServiceBrandPricing blend
+    // (that legacy table isn't written to by any current admin flow and can only ever contribute
+    // stale/dead rows, same reasoning as getPublicServices above).
+    const pricings = await PricingConfig.find({
       serviceId,
       isActive: { $ne: false },
       variantId: { $ne: null }
     }).lean();
 
-    const pricings = [...sbpPricings, ...pcPricings];
-
     let resolvedVariants = [];
     if (Array.isArray(resolvedService.variants)) {
+      // Exact zone match only — no city/Global/any-zone fallback. If nothing is configured for
+      // this exact zone, fall back to the variant's own default extraPrice on the Service
+      // document itself (not another zone's PricingConfig row — that would be a cross-zone leak).
       resolvedVariants = resolvedService.variants.map(v => {
         let variantPricing = null;
         if (targetZoneId) {
-          variantPricing = pricings.find(p => 
+          variantPricing = pricings.find(p =>
             p.variantId && p.variantId.toString() === v._id.toString() &&
             p.zoneId && p.zoneId.toString() === targetZoneId.toString()
-          );
-        }
-        if (!variantPricing && cityId) {
-          variantPricing = pricings.find(p => 
-            p.variantId && p.variantId.toString() === v._id.toString() &&
-            p.cityId && p.cityId.toString() === cityId.toString()
-          );
-        }
-        if (!variantPricing) {
-          variantPricing = pricings.find(p =>
-            p.variantId && p.variantId.toString() === v._id.toString() &&
-            !p.zoneId && !p.cityId
-          );
-        }
-        // Last resort: grab ANY zone's price for this add-on — only when the user's zone
-        // genuinely couldn't be resolved. Once a zone IS known, another zone's add-on price
-        // (e.g. Indore's ₹100) must never leak into a Dewas customer's ₹150 add-on.
-        if (!variantPricing && !targetZoneId) {
-          variantPricing = pricings.find(p =>
-            p.variantId && p.variantId.toString() === v._id.toString()
           );
         }
         const resolvedPrice = variantPricing ? (variantPricing.customerPrice ?? variantPricing.finalCustomerPrice ?? variantPricing.basePrice) : (v.extraPrice || 0);

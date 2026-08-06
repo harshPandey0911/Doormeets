@@ -8,6 +8,16 @@ import Header from '../../components/layout/Header';
 import { vendorCategoryService } from '../../services/vendorCategoryService';
 import LogoLoader from '../../../../components/common/LogoLoader';
 
+// A service can have multiple packages/variants (e.g. "2 Pin" vs "3 Pin") each paying the
+// vendor a different amount — show a single figure when they all match, a min-max range otherwise.
+const formatVendorPayout = (priceDetails) => {
+  const min = Number(priceDetails?.vendorProfitMin) || 0;
+  const max = Number(priceDetails?.vendorProfitMax ?? priceDetails?.vendorProfit) || 0;
+  if (max <= 0) return null;
+  if (min > 0 && min !== max) return `₹${min.toFixed(0)} - ₹${max.toFixed(0)}`;
+  return `₹${max.toFixed(0)}`;
+};
+
 const CategoryDetail = () => {
   const { categoryId } = useParams();
   const location = useLocation();
@@ -151,6 +161,12 @@ const CategoryDetail = () => {
                           <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md">{service.warranty} warranty</span>
                         )}
                       </div>
+                      {formatVendorPayout(service.priceDetails) && (
+                        <div className="mt-1.5 inline-flex items-center gap-1 bg-green-50 border border-green-100 px-2 py-1 rounded-md">
+                          <span className="text-[9px] font-bold text-green-700 uppercase tracking-wide">Vendor Payout</span>
+                          <span className="text-xs font-black text-green-700">{formatVendorPayout(service.priceDetails)}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -277,6 +293,12 @@ const CategoryDetail = () => {
                             <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md">{service.warranty} warranty</span>
                           )}
                         </div>
+                        {formatVendorPayout(service.priceDetails) && (
+                          <div className="mt-1.5 inline-flex items-center gap-1 bg-green-50 border border-green-100 px-2 py-1 rounded-md">
+                            <span className="text-[9px] font-bold text-green-700 uppercase tracking-wide">Vendor Payout</span>
+                            <span className="text-xs font-black text-green-700">{formatVendorPayout(service.priceDetails)}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

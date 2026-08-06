@@ -210,6 +210,11 @@ pricingConfigSchema.post('save', async function(doc) {
 
     const vendorProfit = vPayoutBase > 0 ? netVendorPayout : (taxableAmount - (taxableAmount * (doc.platformCommission / 100)));
 
+    // NOTE: ServiceBrandPricing has no cityId field — this sync previously included `cityId: doc.cityId`
+    // in both the filter and the update, which threw a StrictModeError on every single upsert
+    // (silently swallowed by the catch below) and meant this legacy table never actually got
+    // synced for any PricingConfig created/edited through the modern Price Matrix. Fixed by
+    // dropping the nonexistent field.
     await ServiceBrandPricing.findOneAndUpdate(
       {
         categoryId: doc.categoryId,
@@ -217,7 +222,6 @@ pricingConfigSchema.post('save', async function(doc) {
         serviceId: doc.serviceId,
         brandId: doc.brandId,
         zoneId: doc.zoneId || null,
-        cityId: doc.cityId,
         variantId: doc.variantId || null
       },
       {
@@ -226,7 +230,6 @@ pricingConfigSchema.post('save', async function(doc) {
         serviceId: doc.serviceId,
         brandId: doc.brandId,
         zoneId: doc.zoneId || null,
-        cityId: doc.cityId,
         variantId: doc.variantId || null,
         basePrice: Number(taxableAmount.toFixed(2)),
         gstPercentage: gstPct,
@@ -253,7 +256,6 @@ pricingConfigSchema.post('findOneAndDelete', async function(doc) {
         serviceId: doc.serviceId,
         brandId: doc.brandId,
         zoneId: doc.zoneId || null,
-        cityId: doc.cityId,
         variantId: doc.variantId || null
       });
     }
