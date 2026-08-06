@@ -65,11 +65,19 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
 
           {(service.serviceType !== 'package_base' || !service.packages || service.packages.length === 0) && (
             <div className="mt-1.5 md:mt-2.5 flex items-baseline gap-1.5">
-              <span className="text-sm md:text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-                {service.variants && service.variants.length > 0 ? `Starting from ₹${service.price}` : `₹${service.price}`}
-              </span>
-              {service.originalPrice && Number(service.originalPrice) > Number(service.price) && (
-                <span className="text-xs md:text-sm line-through font-normal" style={{ color: 'var(--text-muted)' }}>₹{service.originalPrice}</span>
+              {service.isPriceDisclosed === false ? (
+                <span className="text-[10px] md:text-xs font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-md border" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
+                  Price not set
+                </span>
+              ) : (
+                <>
+                  <span className="text-sm md:text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                    {service.variants && service.variants.length > 0 ? `Starting from ₹${service.price}` : `₹${service.price}`}
+                  </span>
+                  {service.originalPrice && Number(service.originalPrice) > Number(service.price) && (
+                    <span className="text-xs md:text-sm line-through font-normal" style={{ color: 'var(--text-muted)' }}>₹{service.originalPrice}</span>
+                  )}
+                </>
               )}
             </div>
           )}

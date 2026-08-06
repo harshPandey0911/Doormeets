@@ -1081,11 +1081,11 @@ const getPublicServices = async (req, res) => {
     }));
 
     // Map pricing back to activeServices - EXACT zone match only, no fallback. If admin hasn't
-    // configured a price for the customer's own resolved zone, the service isn't priced there —
-    // it gets filtered out below rather than showing a Global/legacy/other-zone price. This is a
-    // deliberate policy: any fallback tier is a potential cross-zone leak (that's exactly how a
-    // stale legacy row, or an admin-configured "Global" price never intended for this zone, ended
-    // up shown to a customer instead of the ₹100 actually configured for their own zone).
+    // configured a price for the customer's own resolved zone, the PRICE shown is 0/unset — but
+    // the service itself still shows (it's still an admin-added service in this category; hiding
+    // it entirely just because pricing hasn't been configured yet was a real regression: 28 of 32
+    // Electrician services had zero PricingConfig rows and disappeared from the category page).
+    // Only the number is zone-scoped here, never the visibility of the service.
     activeServices = activeServices.map(svc => {
       let resolvedVariants = [];
       const zoneExactVariantPrices = [];
@@ -1130,16 +1130,9 @@ const getPublicServices = async (req, res) => {
         basePrice: cheapestPrice, // Present final exact customer price as basePrice for user app
         variants: resolvedVariants,
         gstPercentage: basePricing ? (basePricing.gstPercentage || 18) : 18,
-        // No zone-exact price configured at all for this service — hide it rather than showing
-        // any fallback/other-zone price.
-        _hasZonePricing: cheapestPrice > 0
+        isPriceDisclosed: cheapestPrice > 0 ? (svc.isPriceDisclosed ?? true) : false
       };
     });
-
-    // A service with no price configured for the customer's own zone doesn't get shown there.
-    if (resolvedZoneId) {
-      activeServices = activeServices.filter(svc => svc._hasZonePricing);
-    }
 
     // Fetch workflow data for multi_visit services
     const multiVisitServiceIds = activeServices
