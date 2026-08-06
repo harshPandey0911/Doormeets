@@ -79,6 +79,29 @@ const useAdminRole = () => {
   const canApproveVendors = isSuperAdmin || admin?.canApproveVendors || false;
   const canApproveWorkers = isSuperAdmin || admin?.canApproveWorkers || false;
 
+  const zoneId = admin?.zoneId || null;
+  const zoneName = admin?.zoneName || '';
+  const assignedZones = useMemo(() => admin?.assignedZones || [], [admin]);
+  // Booking/Approval Control toggles are meaningless for Super Admin (who isn't zone-scoped
+  // in the first place) — expose the raw stored value either way, callers that care about
+  // "is this admin's own booking flow gated" should also check isZoneAdmin.
+  const bookingControlEnabled = admin?.bookingControlEnabled || false;
+  const approvalControlEnabled = admin?.approvalControlEnabled || false;
+
+  /**
+   * Check if admin can access a specific zone (by ID). Super Admin always returns true.
+   */
+  const canAccessZone = useMemo(() => (zoneIdToCheck) => {
+    if (isSuperAdmin) return true;
+    if (!zoneIdToCheck) return true;
+    const targetId = zoneIdToCheck?.toString();
+    if (zoneId && zoneId.toString() === targetId) return true;
+    return assignedZones.some(z => {
+      const id = typeof z === 'object' ? z._id : z;
+      return id?.toString() === targetId;
+    });
+  }, [isSuperAdmin, zoneId, assignedZones]);
+
   return {
     admin,
     role,
@@ -87,10 +110,16 @@ const useAdminRole = () => {
     isZoneAdmin,
     hasPermission,
     canAccessCity,
+    canAccessZone,
     assignedCities,
     permissions,
     canApproveVendors,
-    canApproveWorkers
+    canApproveWorkers,
+    zoneId,
+    zoneName,
+    assignedZones,
+    bookingControlEnabled,
+    approvalControlEnabled
   };
 };
 

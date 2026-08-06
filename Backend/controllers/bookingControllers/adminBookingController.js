@@ -1,6 +1,7 @@
 const Booking = require('../../models/Booking');
 const { validationResult } = require('express-validator');
 const { BOOKING_STATUS } = require('../../utils/constants');
+const { getZoneMatchFilter } = require('../../utils/adminFilterHelper');
 
 /**
  * Get all bookings with filters and search
@@ -59,6 +60,13 @@ const getAllBookings = async (req, res) => {
         { bookingNumber: { $regex: search, $options: 'i' } },
         { serviceName: { $regex: search, $options: 'i' } }
       ];
+    }
+
+    // Zone scoping — this admin-facing manual-assign queue had zero zone filtering before,
+    // so every admin saw every zone's bookings. Super Admin gets {} (no restriction).
+    const zoneFilter = await getZoneMatchFilter(req.user, 'zoneId');
+    if (Object.keys(zoneFilter).length > 0) {
+      query.$and = (query.$and || []).concat([zoneFilter]);
     }
 
     // Pagination
@@ -382,6 +390,10 @@ const getBookingAnalytics = async (req, res) => {
       if (endDate) dateFilter.createdAt.$lte = new Date(endDate);
     }
 
+    // Zone scoping — merged into every $match below via the dateFilter spread. Super Admin
+    // gets {} (no restriction).
+    Object.assign(dateFilter, await getZoneMatchFilter(req.user, 'zoneId'));
+
     // Total bookings
     const totalBookings = await Booking.countDocuments(dateFilter);
 
@@ -511,6 +523,30 @@ const assignVendor = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Vendor not found'
+      });
+    }
+
+    // Zone checks — this endpoint previously had none at all, so any admin could assign any
+    // vendor to any booking. 1) the acting admin must own the booking's own zone (Super Admin
+    // exempt). 2) the target vendor must actually serve that zone — no cross-zone assignment.
+    const zoneScope = req.zoneScope;
+    if (zoneScope && !zoneScope.isSuperAdmin) {
+      if (!booking.zoneId || !zoneScope.zoneIds.includes(booking.zoneId.toString())) {
+        return res.status(403).json({
+          success: false,
+          message: 'This booking does not belong to your assigned zone.'
+        });
+      }
+    }
+
+    const vendorZoneIds = new Set([
+      ...(vendor.zoneId ? [vendor.zoneId.toString()] : []),
+      ...((vendor.zoneIds || []).map(z => z.toString()))
+    ]);
+    if (vendorZoneIds.size > 0 && booking.zoneId && !vendorZoneIds.has(booking.zoneId.toString())) {
+      return res.status(400).json({
+        success: false,
+        message: `${vendor.businessName || vendor.name} does not serve this booking's zone. Choose a vendor assigned to the same zone.`
       });
     }
 

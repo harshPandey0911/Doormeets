@@ -36,6 +36,13 @@ const promoCodeSchema = new mongoose.Schema({
     enum: ['all', 'service', 'category'],
     default: 'all'
   },
+  // Zones this promo is scoped to. Empty = global (available in every zone), same convention
+  // as Category.zoneIds. A Zone Admin creating a promo can only scope it to their own zone.
+  zoneIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone',
+    index: true
+  }],
   serviceId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Service',

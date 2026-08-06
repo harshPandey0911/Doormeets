@@ -4,6 +4,7 @@ const City = require('../../models/City');
 const { validationResult } = require('express-validator');
 const { WORKER_STATUS, BOOKING_STATUS, VENDOR_STATUS } = require('../../utils/constants');
 const { createNotification } = require('../notificationControllers/notificationController');
+const { getZoneMatchFilter } = require('../../utils/adminFilterHelper');
 
 /**
  * Get all workers with filters and pagination
@@ -56,6 +57,13 @@ const getAllWorkers = async (req, res) => {
         { phone: { $regex: search, $options: 'i' } },
         { serviceCategory: { $regex: search, $options: 'i' } }
       ];
+    }
+
+    // Zone scoping — this list had no zone filtering at all before (only the older city-based
+    // CITY_ADMIN branch above). Super Admin gets {} (no restriction).
+    const zoneFilter = await getZoneMatchFilter(req.user, 'zoneId');
+    if (Object.keys(zoneFilter).length > 0) {
+      query.$and = (query.$and || []).concat([zoneFilter]);
     }
 
     // Pagination
@@ -116,7 +124,10 @@ const createWorker = async (req, res) => {
       approvalStatus: 'approved',
       isActive: true,
       status: 'OFFLINE',
-      isPhoneVerified: true // Admin created, assume verified
+      isPhoneVerified: true, // Admin created, assume verified
+      // Attribute to the creating Zone Admin's own zone. Super-Admin-created workers get no
+      // zone here (same "zoneless = Super Admin only until assigned" convention as elsewhere).
+      zoneId: (req.user && req.user.zoneId) || (req.user?.assignedZones && req.user.assignedZones[0]) || null
     };
 
     // Only add email if it was provided (though not in current form)

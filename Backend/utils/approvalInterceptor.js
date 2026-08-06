@@ -19,8 +19,11 @@ const handleCityAdminApproval = async (req, res, { requestType, proposedData, ci
     if (!admin) return false;
 
     const isSuper = admin.role === 'SUPER_ADMIN' || admin.role === 'super_admin';
-    if (isSuper) {
-      // Super admin can make direct modifications, do not intercept
+    // Approval Control toggle (Admin.approvalControlEnabled, default false): when ON, a Zone
+    // Admin's approval-gated actions apply immediately — same direct-modification path Super
+    // Admin already takes — instead of being queued here. OFF (default) is today's behavior,
+    // unchanged.
+    if (isSuper || admin.approvalControlEnabled === true) {
       return false;
     }
 

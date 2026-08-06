@@ -50,6 +50,16 @@ const ticketSchema = new mongoose.Schema({
     enum: ['Vendor', 'User', 'Worker'],
     required: true
   },
+  // Best-effort zone of the creator (vendor/worker's own zone, or resolved from the user's most
+  // recent booking) at creation time, so a Zone Admin's complaint/support views can be scoped.
+  // Null when it couldn't be determined — visible to Super Admin only, same as any other
+  // pre-migration zoneless record.
+  zoneId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone',
+    default: null,
+    index: true
+  },
   subject: {
     type: String,
     required: true,

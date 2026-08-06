@@ -143,7 +143,65 @@ const createBooking = async (req, res) => {
       console.warn('[CreateBooking] Could not resolve a zone for this booking address. Booking will require manual admin assignment.');
     }
 
-    if (vendorId) {
+    // Zone consistency validation — "Customer Zone, Category Zone, Price Matrix Zone, Vendor
+    // Zone must all belong to the same zone." Vendor zone is already enforced below (direct-
+    // booking guard + auto-match query). Category/pricing use the same "empty/null = global"
+    // convention established for Category.zoneIds elsewhere — only reject when the admin has
+    // explicitly restricted this category/price to zones that exclude the customer's own.
+    if (resolvedBookingZone) {
+      if (category && Array.isArray(category.zoneIds) && category.zoneIds.length > 0) {
+        const categoryCoversZone = category.zoneIds.some(z => z.toString() === resolvedBookingZone._id.toString());
+        if (!categoryCoversZone) {
+          return res.status(400).json({
+            success: false,
+            message: 'This service category is not available in your zone.'
+          });
+        }
+      }
+
+      try {
+        const PricingConfig = require('../../models/PricingConfig');
+        const anyPricingForService = await PricingConfig.exists({ serviceId, isActive: { $ne: false } });
+        if (anyPricingForService) {
+          const validPricingExists = await PricingConfig.exists({
+            serviceId,
+            isActive: { $ne: false },
+            $or: [{ zoneId: resolvedBookingZone._id }, { zoneId: null }]
+          });
+          if (!validPricingExists) {
+            return res.status(400).json({
+              success: false,
+              message: 'This service is not priced for your zone yet. Please contact support.'
+            });
+          }
+        }
+      } catch (pricingZoneErr) {
+        console.error('[CreateBooking] Price matrix zone validation error:', pricingZoneErr);
+      }
+    }
+
+    // Booking Control toggle — if the zone admin who owns this zone has it turned ON, every
+    // booking in their zone routes to the manual-assign queue ('pending_admin') for them to
+    // review and assign a vendor themselves, instead of auto-matching or honoring a direct
+    // vendor pick. OFF (default) leaves today's flow completely unchanged.
+    let bookingControlActive = false;
+    if (resolvedBookingZone) {
+      const Admin = require('../../models/Admin');
+      const controllingZoneAdmin = await Admin.findOne({
+        isActive: true,
+        bookingControlEnabled: true,
+        $or: [{ zoneId: resolvedBookingZone._id }, { assignedZones: resolvedBookingZone._id }]
+      }).select('_id').lean();
+      bookingControlActive = !!controllingZoneAdmin;
+      if (bookingControlActive) {
+        console.log(`[CreateBooking] Booking Control is ON for zone ${resolvedBookingZone.name} — routing to manual admin assignment.`);
+      }
+    }
+
+    if (bookingControlActive) {
+      // Skip vendor search entirely — this booking goes straight to the zone admin's queue.
+      nearbyVendors = [];
+    } else if (vendorId) {
       // DIRECT BOOKING: User picked a specific vendor
       console.log(`[CreateBooking] Direct booking for vendorId: ${vendorId}`);
       const targetVendor = await Vendor.findById(vendorId).select('name businessName phone address isOnline availability approvalStatus isActive geoLocation settings zoneId zoneIds');
@@ -558,6 +616,9 @@ const createBooking = async (req, res) => {
       codAdvanceAmount: computedCodAdvanceAmount,
       userId,
       vendorId: null, // Will be assigned when vendor accepts
+      // Single source of truth for every zone-scoped admin query — resolved server-side above,
+      // never trusted from the client.
+      zoneId: resolvedBookingZone?._id || null,
       serviceId,
       categoryId: finalCategory?._id || categoryId,
       subCategoryId: service.subCategoryId || null,
@@ -616,6 +677,7 @@ const createBooking = async (req, res) => {
         await Transaction.create({
           userId,
           bookingId: booking._id,
+          zoneId: booking.zoneId || null,
           amount: walletAmountUsed,
           type: 'debit',
           paymentMethod: 'wallet',

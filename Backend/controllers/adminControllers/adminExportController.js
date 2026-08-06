@@ -3,6 +3,7 @@ const Vendor = require('../../models/Vendor');
 const User = require('../../models/User');
 const PDFDocument = require('pdfkit');
 const { BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
+const { getBookingQueryFilter } = require('../../utils/adminFilterHelper');
 
 // Helper to get booking filters by date range
 const getReportFilter = (startDate, endDate) => {
@@ -26,6 +27,8 @@ exports.exportExcel = async (req, res) => {
   try {
     const { reportType, startDate, endDate } = req.query;
     const filter = getReportFilter(startDate, endDate);
+    // Zone scoping — these exports had none at all before.
+    Object.assign(filter, await getBookingQueryFilter(req.user));
 
     let csvContent = '';
     let filename = `${reportType || 'report'}_export_${Date.now()}.csv`;
@@ -103,6 +106,8 @@ exports.exportPDF = async (req, res) => {
   try {
     const { reportType, startDate, endDate } = req.query;
     const filter = getReportFilter(startDate, endDate);
+    // Zone scoping — these exports had none at all before.
+    Object.assign(filter, await getBookingQueryFilter(req.user));
 
     let doc = new PDFDocument({ margin: 30, size: 'A4' });
     let filename = `${reportType || 'report'}_export_${Date.now()}.pdf`;

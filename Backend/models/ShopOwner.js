@@ -42,6 +42,16 @@ const shopOwnerSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  // Zone this shop owner is scoped to. No natural geographic field exists on this model to
+  // auto-derive it from, so it's set explicitly by whichever admin creates the account
+  // (defaults to the creating Zone Admin's own zone; null = Super Admin only, same convention
+  // as every other zoneless record until assigned).
+  zoneId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone',
+    default: null,
+    index: true
+  },
   wallet: {
     balance: {
       type: Number,

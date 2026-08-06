@@ -90,6 +90,24 @@ const adminSchema = new mongoose.Schema({
     default: false
   },
 
+  // Booking Control: OFF (default) = bookings in this admin's zone auto-assign to a vendor as
+  // today. ON = every booking in this admin's zone is routed to the manual-assign queue
+  // ('pending_admin') for this admin to review and assign a vendor themselves. See
+  // controllers/bookingControllers/userBookingController.js createBooking.
+  bookingControlEnabled: {
+    type: Boolean,
+    default: false
+  },
+
+  // Approval Control: OFF (default) = this admin's approval-gated actions (vendor approval,
+  // KYC, category/brand proposals, vendor deletion) create a CityAdminRequest for Super Admin
+  // review, exactly as today. ON = those actions apply immediately, no request created. See
+  // utils/approvalInterceptor.js.
+  approvalControlEnabled: {
+    type: Boolean,
+    default: false
+  },
+
   // Audit
   createdBySuperAdmin: {
     type: Boolean,

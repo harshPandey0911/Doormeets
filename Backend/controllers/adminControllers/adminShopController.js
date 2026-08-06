@@ -1,6 +1,7 @@
 const ShopOwner = require('../../models/ShopOwner');
 const Vendor = require('../../models/Vendor');
 const Transaction = require('../../models/Transaction');
+const { getZoneMatchFilter } = require('../../utils/adminFilterHelper');
 
 /**
  * Get all shop owners with search and pagination
@@ -21,6 +22,12 @@ const getAllShopOwners = async (req, res) => {
         { email: { $regex: search, $options: 'i' } },
         { businessName: { $regex: search, $options: 'i' } }
       ];
+    }
+
+    // Zone scoping — this list had no zone filtering at all before.
+    const zoneFilter = await getZoneMatchFilter(req.user, 'zoneId');
+    if (Object.keys(zoneFilter).length > 0) {
+      query.$and = (query.$and || []).concat([zoneFilter]);
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -227,7 +234,10 @@ const createShopOwner = async (req, res) => {
       businessName,
       password,
       referralCode,
-      isActive: true
+      isActive: true,
+      // Attribute to the creating Zone Admin's own zone (Super Admin can override via
+      // req.body.zoneId if the form ever adds a picker; falls back to their own zone otherwise).
+      zoneId: req.body.zoneId || (req.user && req.user.zoneId) || (req.user?.assignedZones && req.user.assignedZones[0]) || null
     });
 
     res.status(201).json({

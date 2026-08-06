@@ -314,6 +314,7 @@ async function processBookingCompletion(bookingId) {
       userId: booking.userId || null,
       vendorId: vendorId,
       bookingId: booking._id,
+      zoneId: booking.zoneId || null,
       amount: amount,
       type: type,
       status: 'completed',
@@ -397,6 +398,7 @@ async function processBookingCompletion(bookingId) {
       await Transaction.create({
         vendorId: vendorId,
         bookingId: booking._id,
+        zoneId: booking.zoneId || null,
         amount: vendorShare,
         type: 'earnings_credit',
         status: 'completed',

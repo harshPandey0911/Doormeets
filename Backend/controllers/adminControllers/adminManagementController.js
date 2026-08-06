@@ -47,7 +47,8 @@ const createAdmin = async (req, res) => {
       zoneId, zoneName, assignedZones,
       assignedCities, permissions,
       canApproveVendors, canApproveWorkers,
-      assignedVendors
+      assignedVendors,
+      bookingControlEnabled, approvalControlEnabled
     } = req.body;
 
     // Check if admin already exists
@@ -87,6 +88,8 @@ const createAdmin = async (req, res) => {
       canApproveVendors: canApproveVendors || false,
       canApproveWorkers: canApproveWorkers || false,
       assignedVendors: assignedVendors || [],
+      bookingControlEnabled: bookingControlEnabled || false,
+      approvalControlEnabled: approvalControlEnabled || false,
       createdBySuperAdmin: true
     });
 
@@ -107,7 +110,9 @@ const createAdmin = async (req, res) => {
         permissions: admin.permissions,
         canApproveVendors: admin.canApproveVendors,
         canApproveWorkers: admin.canApproveWorkers,
-        assignedVendors: admin.assignedVendors
+        assignedVendors: admin.assignedVendors,
+        bookingControlEnabled: admin.bookingControlEnabled,
+        approvalControlEnabled: admin.approvalControlEnabled
       }
     });
   } catch (error) {
@@ -169,7 +174,7 @@ const updateAdminRole = async (req, res) => {
     const { id } = req.params;
     const { role } = req.body;
 
-    const validRoles = ['SUPER_ADMIN', 'CITY_ADMIN', 'super_admin', 'admin'];
+    const validRoles = ['SUPER_ADMIN', 'CITY_ADMIN', 'ZONE_ADMIN', 'super_admin', 'admin', 'zone_admin'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({
         success: false,
@@ -216,7 +221,7 @@ const updateAdminRole = async (req, res) => {
   const updateAdminPermissions = async (req, res) => {
     try {
       const { id } = req.params;
-      const { permissions, assignedCities, canApproveVendors, canApproveWorkers, assignedVendors } = req.body;
+      const { permissions, assignedCities, canApproveVendors, canApproveWorkers, assignedVendors, bookingControlEnabled, approvalControlEnabled } = req.body;
 
     const admin = await Admin.findById(id);
     if (!admin) {
@@ -247,6 +252,14 @@ const updateAdminRole = async (req, res) => {
       admin.assignedVendors = assignedVendors;
     }
 
+    if (bookingControlEnabled !== undefined) {
+      admin.bookingControlEnabled = bookingControlEnabled;
+    }
+
+    if (approvalControlEnabled !== undefined) {
+      admin.approvalControlEnabled = approvalControlEnabled;
+    }
+
     await admin.save();
     await admin.populate('assignedCities', 'name slug');
 
@@ -261,7 +274,9 @@ const updateAdminRole = async (req, res) => {
         assignedCities: admin.assignedCities,
         canApproveVendors: admin.canApproveVendors,
         canApproveWorkers: admin.canApproveWorkers,
-        assignedVendors: admin.assignedVendors
+        assignedVendors: admin.assignedVendors,
+        bookingControlEnabled: admin.bookingControlEnabled,
+        approvalControlEnabled: admin.approvalControlEnabled
       }
     });
   } catch (error) {
@@ -283,7 +298,7 @@ module.exports = {
   updateAdmin: async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, email, password, role, cityId, cityName, zoneId, zoneName, assignedZones, assignedCities, canApproveVendors, canApproveWorkers, assignedVendors } = req.body;
+      const { name, email, password, role, cityId, cityName, zoneId, zoneName, assignedZones, assignedCities, canApproveVendors, canApproveWorkers, assignedVendors, bookingControlEnabled, approvalControlEnabled } = req.body;
 
       // Find admin
       let admin = await Admin.findById(id);
@@ -312,6 +327,8 @@ module.exports = {
       if (canApproveVendors !== undefined) admin.canApproveVendors = canApproveVendors;
       if (canApproveWorkers !== undefined) admin.canApproveWorkers = canApproveWorkers;
       if (assignedVendors !== undefined) admin.assignedVendors = assignedVendors;
+      if (bookingControlEnabled !== undefined) admin.bookingControlEnabled = bookingControlEnabled;
+      if (approvalControlEnabled !== undefined) admin.approvalControlEnabled = approvalControlEnabled;
 
       if (req.body.permissions !== undefined) {
         admin.permissions = req.body.permissions.map(p => {
@@ -339,11 +356,16 @@ module.exports = {
           name: admin.name,
           email: admin.email,
           role: admin.role,
+          zoneId: admin.zoneId,
+          zoneName: admin.zoneName,
+          assignedZones: admin.assignedZones,
           assignedCities: admin.assignedCities,
           permissions: admin.permissions,
           canApproveVendors: admin.canApproveVendors,
           canApproveWorkers: admin.canApproveWorkers,
           assignedVendors: admin.assignedVendors,
+          bookingControlEnabled: admin.bookingControlEnabled,
+          approvalControlEnabled: admin.approvalControlEnabled,
           isActive: admin.isActive
         }
       });

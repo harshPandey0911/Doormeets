@@ -37,7 +37,6 @@ const VendorSubscriptionManagement = lazy(() => import('../pages/VendorSubscript
 const Training = lazy(() => import('../pages/Training'));
 const VendorRequests = lazy(() => import('../pages/VendorRequests'));
 const AdminManagement = lazy(() => import('../pages/AdminManagement'));
-const ApprovalDashboard = lazy(() => import('../pages/ApprovalDashboard'));
 const Commission = lazy(() => import('../pages/Commission'));
 const PromoManagement = lazy(() => import('../pages/PromoManagement'));
 const VoucherManagement = lazy(() => import('../pages/VoucherManagement'));
@@ -125,9 +124,9 @@ const AdminRoutes = () => {
           <Route path="admin-management/*" element={
             <SuperAdminRoute><AdminManagement /></SuperAdminRoute>
           } />
-          <Route path="approvals" element={
-            <SuperAdminRoute><ApprovalDashboard /></SuperAdminRoute>
-          } />
+          {/* Approval Dashboard was a duplicate of Admin Management's "Pending Proposals" tab —
+              consolidated into one place. Redirect any old bookmarks/links there. */}
+          <Route path="approvals" element={<Navigate to="/admin/admin-management/proposals" replace />} />
         </Route>
       </Routes>
     </Suspense>
