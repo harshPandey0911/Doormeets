@@ -431,8 +431,8 @@ const QuestionsTab = () => {
       <div className="space-y-4">
         {questions.map((q, idx) => (
           <div key={q._id} className="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden transition-all hover:shadow-md">
-            <button
-              className="w-full p-5 text-left flex items-start gap-4"
+            <div
+              className="w-full p-5 text-left flex items-start gap-4 cursor-pointer"
               onClick={() => setExpandedQ(expandedQ === q._id ? null : q._id)}
             >
               <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-gray-500 font-bold text-sm">
@@ -443,17 +443,17 @@ const QuestionsTab = () => {
                 <span className={`inline-block mt-2 text-xs font-bold px-2.5 py-0.5 rounded-full border capitalize ${DIFF_COLORS[q.difficulty]}`}>{q.difficulty}</span>
               </div>
               <div className="flex items-center gap-2 pt-1">
-                <button onClick={e => { e.stopPropagation(); openEdit(q); }} className="p-2 bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-600 rounded-lg transition-colors">
+                <button type="button" onClick={e => { e.stopPropagation(); openEdit(q); }} className="p-2 bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-600 rounded-lg transition-colors cursor-pointer">
                   <FiEdit2 size={14} />
                 </button>
-                <button onClick={e => { e.stopPropagation(); handleDelete(q._id); }} className="p-2 bg-red-50 hover:bg-red-100 border border-red-100 text-red-600 rounded-lg transition-colors">
+                <button type="button" onClick={e => { e.stopPropagation(); handleDelete(q._id); }} className="p-2 bg-red-50 hover:bg-red-100 border border-red-100 text-red-600 rounded-lg transition-colors cursor-pointer">
                   <FiTrash2 size={14} />
                 </button>
                 <div className="ml-2 w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-400">
                   {expandedQ === q._id ? <FiChevronUp size={20} /> : <FiChevronDown size={20} />}
                 </div>
               </div>
-            </button>
+            </div>
 
             {expandedQ === q._id && (
               <div className="px-5 pb-5 border-t border-gray-100 bg-gray-50">

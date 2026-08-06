@@ -1,6 +1,7 @@
 const Vendor = require('../../models/Vendor');
 const { getVendorQueryFilter } = require('../../utils/adminFilterHelper');
 const { handleCityAdminApproval } = require('../../utils/approvalInterceptor');
+const { createNotification } = require('../notificationControllers/notificationController');
 
 /**
  * Get all vendors with submitted police verifications

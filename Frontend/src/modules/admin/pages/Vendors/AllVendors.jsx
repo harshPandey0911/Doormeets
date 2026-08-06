@@ -79,6 +79,7 @@ const AllVendors = () => {
             pan: vendor.pan?.document,
             other: vendor.otherDocuments?.[0]
           },
+          policeVerification: vendor.policeVerification,
           training: vendor.training,
           currentLevel: vendor.currentLevel,
           createdAt: vendor.createdAt,

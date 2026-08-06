@@ -130,24 +130,11 @@ const VerificationPage = () => {
     }
   }, []);
 
-  // On-screen countdown timer (ensures 100% reliability even if YT iframe events are blocked by adblockers/Brave)
+  // Reset initial countdown timer when video changes
   useEffect(() => {
     if (step === 3 && video) {
       const targetSec = video.durationSeconds || 30;
       setSecondsLeft(targetSec);
-      
-      const timer = setInterval(() => {
-        setSecondsLeft(prev => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            setCanSubmitVideo(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
     }
   }, [step, video]);
 
@@ -199,36 +186,41 @@ const extractYouTubeId = (url) => {
             const player = event.target;
             playerRef.current = player;
             interval = setInterval(() => {
-              if (!player || typeof player.getCurrentTime !== 'function') {
-                return;
-              }
+              const playerState = typeof player.getPlayerState === 'function' ? player.getPlayerState() : -1;
+              const isPlaying = playerState === 1; // 1 = YT.PlayerState.PLAYING
 
-              const currentTime = player.getCurrentTime();
-              const actualDuration = player.getDuration() || 300;
-              const requiredDuration = video.durationSeconds || actualDuration;
-              const targetDuration = Math.min(actualDuration, requiredDuration);
-              const rate = player.getPlaybackRate();
+              if (isPlaying) {
+                const currentTime = player.getCurrentTime();
+                const actualDuration = player.getDuration() || 300;
+                const requiredDuration = video.durationSeconds || actualDuration;
+                const targetDuration = Math.min(actualDuration, requiredDuration);
+                const rate = player.getPlaybackRate();
 
-              // 1. Prevent speed change
-              if (rate > 1) {
-                player.setPlaybackRate(1);
-                toast.error('Speeding up the training video is not allowed.');
-              }
-
-              // 2. Prevent skipping forward
-              if (currentTime - lastTime > 2.0) {
-                player.seekTo(maxTime, true);
-                toast.error('Skipping forward is not allowed.');
-              } else {
-                lastTime = currentTime;
-                if (currentTime > maxTime) {
-                  maxTime = currentTime;
+                // 1. Prevent speed change
+                if (rate > 1) {
+                  player.setPlaybackRate(1);
+                  toast.error('Speeding up the training video is not allowed.');
                 }
-              }
 
-              // 3. Enable submit button when 95% of target duration is watched
-              if (maxTime >= targetDuration * 0.95) {
-                setCanSubmitVideo(true);
+                // 2. Prevent skipping forward
+                if (currentTime - lastTime > 2.0) {
+                  player.seekTo(maxTime, true);
+                  toast.error('Skipping forward is not allowed.');
+                } else {
+                  lastTime = currentTime;
+                  if (currentTime > maxTime) {
+                    maxTime = currentTime;
+                  }
+                }
+
+                // 3. Decrement timer based on actual watch time
+                const remaining = Math.max(0, Math.ceil(targetDuration - maxTime));
+                setSecondsLeft(remaining);
+
+                // 4. Enable submit button when 95% of target duration is watched
+                if (maxTime >= targetDuration * 0.95 || remaining === 0) {
+                  setCanSubmitVideo(true);
+                }
               }
             }, 500);
           }
@@ -303,9 +295,17 @@ const extractYouTubeId = (url) => {
         if (!hasAadhar || !hasPan) {
           setStep(1);
         }
-        // Step 2: Aadhaar/PAN are done, but Police Verification document is missing
-        else if (pvStatus === 'pending' || pvStatus === 'rejected' || !hasPV) {
+        // Step 2: Aadhaar/PAN are done, but Police Verification document is missing or not submitted
+        else if (!hasPV && pvMethod === 'self') {
           setStep(2);
+        }
+        // If documents submitted (hasPV or pvMethod === admin), but vendor is NOT yet approved by Admin
+        else if (vendorData.approvalStatus !== 'approved') {
+          if (vendorData._id || vendorData.id) {
+            sessionStorage.setItem('pendingVendorId', (vendorData._id || vendorData.id).toString());
+          }
+          navigate('/vendor/pending-approval', { replace: true });
+          return;
         }
         // Proceed with training video, MCQ test, and subscription
         else {
@@ -469,21 +469,24 @@ const extractYouTubeId = (url) => {
   const handleSubmitPVDocument = async (e) => {
     e.preventDefault();
 
-    if (!policeDoc) {
+    if (pvMethod === 'self' && !policeDoc) {
       toast.error('Please upload the Police Verification document');
       return;
     }
 
     setSubmittingPV(true);
     try {
-      const res = await api.post('/vendors/verification/police', {
-        documentUrl: policeDoc
-      });
-
-      if (res.data.success) {
-        toast.success('Police verification certificate submitted successfully!');
-        fetchStatus();
+      if (pvMethod === 'self' && policeDoc) {
+        await api.post('/vendors/verification/police', {
+          documentUrl: policeDoc
+        });
       }
+
+      toast.success('Police verification documents submitted successfully!');
+      if (vendor?._id || vendor?.id) {
+        sessionStorage.setItem('pendingVendorId', (vendor._id || vendor.id).toString());
+      }
+      navigate('/vendor/pending-approval', { replace: true });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to submit PV document');
     } finally {
@@ -510,8 +513,10 @@ const extractYouTubeId = (url) => {
     const actualDuration = videoEl.duration || 300;
     const requiredDuration = video?.durationSeconds || actualDuration;
     const targetDuration = Math.min(actualDuration, requiredDuration);
+    const remaining = Math.max(0, Math.ceil(targetDuration - maxHtml5Time.current));
+    setSecondsLeft(remaining);
 
-    if (maxHtml5Time.current >= targetDuration * 0.95) {
+    if (maxHtml5Time.current >= targetDuration * 0.95 || remaining === 0) {
       setCanSubmitVideo(true);
     }
   };
@@ -560,15 +565,12 @@ const extractYouTubeId = (url) => {
   };
 
   const handleSubscriptionComplete = () => {
-    toast.success('Verification complete! Welcome to Doormeets.');
-    const pvStatus = vendor?.policeVerification?.status || 'pending';
-    if (pvStatus === 'approved') {
+    if (vendor?.isSubscriptionActive) {
+      toast.success('Training complete! Welcome to Doormeets.');
       navigate('/vendor/dashboard', { replace: true });
     } else {
-      if (vendor?._id || vendor?.id) {
-        sessionStorage.setItem('pendingVendorId', (vendor._id || vendor.id).toString());
-      }
-      navigate('/vendor/pending-approval', { replace: true });
+      toast.success('Training & MCQ completed! Please select your subscription plan.');
+      navigate('/vendor/subscription', { replace: true, state: { vendorId: vendor?._id || vendor?.id } });
     }
   };
 
@@ -873,7 +875,7 @@ const extractYouTubeId = (url) => {
               </div>
             )}
 
-            <form onSubmit={pvMethod === 'admin' ? (e) => { e.preventDefault(); setStep(3); } : handleSubmitPVDocument} className="space-y-6">
+            <form onSubmit={handleSubmitPVDocument} className="space-y-6">
               {pvMethod === 'admin' ? (
                 <div className="bg-[#B33A35]/5 border border-[#B33A35]/10 p-6 rounded-2xl text-center space-y-3">
                   <FiShield className="mx-auto text-4xl text-[#B33A35] animate-pulse" />

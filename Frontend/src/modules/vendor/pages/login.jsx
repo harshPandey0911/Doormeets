@@ -195,14 +195,16 @@ const VendorLogin = () => {
             return;
           }
 
-          // Check for pending approval status (New Verification Flow)
-          const isPending = response.vendor?.approvalStatus?.toLowerCase() === 'pending' || response.vendor?.adminApproval?.toLowerCase() === 'pending';
-          if (isPending) {
+          // Check for pending approval status
+          const isApproved = response.vendor?.approvalStatus?.toLowerCase() === 'approved';
+          if (!isApproved) {
             localStorage.setItem('vendorAccessToken', response.accessToken);
             localStorage.setItem('vendorRefreshToken', response.refreshToken);
             localStorage.setItem('vendorData', JSON.stringify(response.vendor));
-            navigate('/vendor/verification');
-            toast.success('Please complete your training and subscription.');
+            if (response.vendor?._id || response.vendor?.id) {
+              sessionStorage.setItem('pendingVendorId', (response.vendor._id || response.vendor.id).toString());
+            }
+            navigate('/vendor/pending-approval');
             return;
           }
 
@@ -210,10 +212,13 @@ const VendorLogin = () => {
           localStorage.setItem('vendorRefreshToken', response.refreshToken);
           localStorage.setItem('vendorData', JSON.stringify(response.vendor));
 
-          // Navigate FIRST — dashboard is already prefetched, so it loads instantly
-          navigate('/vendor', { replace: true });
-          // Toast fires after navigation (appears on dashboard)
-          toast.success('Welcome Back! Logged in successfully.');
+          if (!response.vendor?.isSubscriptionActive) {
+            navigate('/vendor/subscription', { replace: true, state: { vendorId: response.vendor._id || response.vendor.id } });
+            toast.success('Welcome Back! Please select your subscription plan.');
+          } else {
+            navigate('/vendor', { replace: true });
+            toast.success('Welcome Back! Logged in successfully.');
+          }
         }
       } else {
         setIsLoading(false);

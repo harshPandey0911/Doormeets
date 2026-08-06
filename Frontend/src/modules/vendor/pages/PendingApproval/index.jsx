@@ -16,18 +16,23 @@ const PendingApproval = () => {
 
   useEffect(() => {
     const checkStatus = async () => {
-      const vendorId = sessionStorage.getItem('pendingVendorId');
-      if (!vendorId || isRejected || isTrainingPending) return;
+      let vendorId = sessionStorage.getItem('pendingVendorId');
+      if (!vendorId) {
+        try {
+          const storedVendor = JSON.parse(localStorage.getItem('vendorData') || '{}');
+          vendorId = storedVendor._id || storedVendor.id;
+        } catch {}
+      }
+      if (!vendorId || isRejected) return;
 
       try {
         const response = await getRegistrationStatus(vendorId);
-        if (response.success) {
-          if (response.approvalStatus?.toLowerCase() === 'approved') {
-            if (!response.isSubscriptionActive) {
-              navigate('/vendor/subscription', { state: { vendorId } });
-            } else {
-              navigate('/vendor/dashboard');
-            }
+        if (response.success && response.vendor) {
+          const status = response.vendor.approvalStatus?.toLowerCase();
+          if (status === 'approved') {
+            const toast = (await import('react-hot-toast')).toast;
+            toast.success('🎉 Your account has been approved by Admin! Please complete training.', { duration: 6000 });
+            navigate('/vendor/verification');
           }
         }
       } catch (error) {
@@ -36,7 +41,9 @@ const PendingApproval = () => {
     };
 
     checkStatus();
-  }, [navigate, isRejected, isTrainingPending]);
+    const interval = setInterval(checkStatus, 5000);
+    return () => clearInterval(interval);
+  }, [navigate, isRejected]);
 
   const handleBackToLogin = () => {
     // Clear any temporary tokens if they exist
@@ -73,15 +80,13 @@ const PendingApproval = () => {
             </div>
             
             <h2 className="text-base sm:text-lg font-extrabold text-gray-900 mb-1.5 tracking-tight">
-              {isRejected ? 'Application Rejected' : isTrainingPending ? 'Training Under Review' : 'Registration Under Review'}
+              {isRejected ? 'Application Rejected' : 'Your Documents are Under Review'}
             </h2>
             
             <p className="text-xs text-gray-600 mb-3 leading-relaxed">
               {isRejected 
                 ? "We regret to inform you that your application has been rejected."
-                : isTrainingPending
-                ? "You have completed your training. Our team is reviewing your results and will approve your account shortly."
-                : "Your application is currently being verified by our team. You'll be able to access your dashboard once your account is approved."}
+                : "Your verification documents have been submitted successfully. Our admin team is reviewing your profile and will approve your account shortly."}
             </p>
 
             <div className="space-y-2.5">

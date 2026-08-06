@@ -80,15 +80,19 @@ const ProtectedRoute = ({ children, userType = 'user', redirectTo = null, allowD
     return <Navigate to={redirectPath} state={{ from: location }} replace />;
   }
 
-  // Prevent pending vendors from accessing routes other than verification
+  // Enforce approval & onboarding route protection for vendors
   if (userType === 'vendor' && isAuthenticated) {
     try {
       const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
-      if (vendorData.approvalStatus?.toLowerCase() === 'pending' && !location.pathname.includes('/verification')) {
-        return <Navigate to="/vendor/verification" replace />;
+      const isApproved = vendorData.approvalStatus?.toLowerCase() === 'approved';
+      const path = location.pathname;
+
+      if (!isApproved) {
+        if (!path.includes('/pending-approval') && !path.includes('/verification') && !path.includes('/subscription')) {
+          return <Navigate to="/vendor/pending-approval" replace />;
+        }
       }
     } catch (e) {
-      // vendorData might be corrupted (e.g., "undefined" string) — skip the check
       console.warn('ProtectedRoute: Failed to parse vendorData:', e.message);
     }
   }

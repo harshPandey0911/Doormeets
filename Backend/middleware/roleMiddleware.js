@@ -269,16 +269,17 @@ const canAccessCity = (paramName = 'cityId') => {
  */
 const canApproveVendors = async (req, res, next) => {
   try {
-    if (!req.admin && req.user) {
-      const Admin = require('../models/Admin');
-      req.admin = req.user.isSuperAdmin ? req.user : Admin.hydrate(req.user);
-    }
-
-    if (!req.admin) {
+    const admin = req.admin || req.user;
+    if (!admin) {
       return res.status(401).json({ success: false, message: 'Admin not found.' });
     }
 
-    if (req.admin.isSuperAdmin() || req.admin.canApproveVendors || req.admin.role === 'ZONE_ADMIN' || req.admin.role === 'zone_admin') {
+    const role = (admin.role || '').toUpperCase();
+    const isSuperAdmin = typeof admin.isSuperAdmin === 'function' 
+      ? admin.isSuperAdmin() 
+      : (role === 'SUPER_ADMIN' || role === 'SUPERADMIN');
+
+    if (isSuperAdmin || admin.canApproveVendors || role === 'ZONE_ADMIN') {
       return next();
     }
 
@@ -298,16 +299,17 @@ const canApproveVendors = async (req, res, next) => {
  */
 const canApproveWorkers = async (req, res, next) => {
   try {
-    if (!req.admin && req.user) {
-      const Admin = require('../models/Admin');
-      req.admin = req.user.isSuperAdmin ? req.user : Admin.hydrate(req.user);
-    }
-
-    if (!req.admin) {
+    const admin = req.admin || req.user;
+    if (!admin) {
       return res.status(401).json({ success: false, message: 'Admin not found.' });
     }
 
-    if (req.admin.isSuperAdmin() || req.admin.canApproveWorkers) {
+    const role = (admin.role || '').toUpperCase();
+    const isSuperAdmin = typeof admin.isSuperAdmin === 'function' 
+      ? admin.isSuperAdmin() 
+      : (role === 'SUPER_ADMIN' || role === 'SUPERADMIN');
+
+    if (isSuperAdmin || admin.canApproveWorkers) {
       return next();
     }
 
