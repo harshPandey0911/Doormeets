@@ -119,7 +119,10 @@ const _buildVendorQuery = (filters = {}) => {
     approvalStatus: VENDOR_STATUS.APPROVED,
     isActive: true,
     isOnline: true, // Only fetch online vendors for bookings
-    availability: { $in: ['AVAILABLE', 'BUSY'] },
+    // Only 'AVAILABLE'/'ON_JOB'/'OFFLINE' are ever actually written to this field (see
+    // Vendor.updateWorkStatus) — 'BUSY' is never assigned here, so the old `$in:['AVAILABLE',
+    // 'BUSY']` was dead code; this is equivalent, just clearer about what's really being matched.
+    availability: 'AVAILABLE',
     ...queryFilters
   };
 
@@ -278,6 +281,16 @@ const findVendorsByCity = async (city, filters = {}, newBookingEndTime = null) =
   }
 };
 
+/**
+ * Determines, per-vendor, whether ANY identity (the owner, or one of their online workers) is
+ * actually free for the requested slot — not just a raw headcount. Each vendor has an identity
+ * pool = {owner} ∪ {each ONLINE worker}. Existing active bookings that overlap the requested
+ * window (widened by the admin's Booking Lock Window buffer — Settings.vendorBusyBufferHours)
+ * each consume one identity from the pool: a booking with a specific `workerId` consumes exactly
+ * that worker; a booking with no `workerId` (self/unassigned) consumes one generic slot. The
+ * vendor is excluded from this specific request only if the pool ends up completely empty —
+ * e.g. Owner busy + Worker1 busy + Worker3 busy but Worker2 free still lets the vendor through.
+ */
 const filterConflictVendors = async (vendors, scheduledDate, timeSlot, scheduledTime) => {
   if (!scheduledDate || (!timeSlot?.start && !scheduledTime) || !vendors || !vendors.length) {
     return vendors;
@@ -286,51 +299,79 @@ const filterConflictVendors = async (vendors, scheduledDate, timeSlot, scheduled
   const mongoose = require('mongoose');
   const Booking = mongoose.model('Booking');
   const Worker = mongoose.model('Worker');
+  const Settings = mongoose.model('Settings');
 
   const startOfDay = new Date(scheduledDate);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(scheduledDate);
   endOfDay.setHours(23, 59, 59, 999);
 
-  const slotStart = timeSlot?.start;
+  // Admin-configurable Booking Lock Window: how many hours before an existing booking's start
+  // an owner/worker identity is already considered occupied by it.
+  const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+  const busyBufferHours = (globalSettings && globalSettings.vendorBusyBufferHours !== undefined)
+    ? globalSettings.vendorBusyBufferHours
+    : 1;
+  const busyBufferMs = busyBufferHours * 60 * 60 * 1000;
+
+  // The requested slot's actual datetime range. With no known end, it's treated as a
+  // zero-length instant — still correctly conflicts with anything buffered into it.
+  const requestedStart = parseScheduledStartTime(scheduledDate, timeSlot?.start || scheduledTime);
+  const requestedEnd = timeSlot?.end
+    ? parseScheduledStartTime(scheduledDate, timeSlot.end)
+    : requestedStart;
+
+  const activeStatuses = ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement', 'confirmed'];
 
   // Evaluate all vendors in parallel to speed up booking creation
   const evaluations = await Promise.all(
     vendors.map(async (vendor) => {
       try {
-        const query = {
-          vendorId: vendor._id,
-          status: { $in: ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement', 'confirmed'] },
-          scheduledDate: {
-            $gte: startOfDay,
-            $lte: endOfDay
-          }
-        };
-
-        if (slotStart && scheduledTime) {
-          query.$or = [
-            { 'timeSlot.start': slotStart },
-            { scheduledTime: scheduledTime }
-          ];
-        } else if (slotStart) {
-          query['timeSlot.start'] = slotStart;
-        } else {
-          query.scheduledTime = scheduledTime;
-        }
-
-        const [onlineWorkersCount, activeBookingsCount] = await Promise.all([
-          Worker.countDocuments({
+        const [onlineWorkers, candidateBookings] = await Promise.all([
+          Worker.find({
             vendorId: vendor._id,
             status: 'ONLINE',
             isDeleted: { $ne: true }
-          }),
-          Booking.countDocuments(query)
+          }).select('_id'),
+          Booking.find({
+            vendorId: vendor._id,
+            status: { $in: activeStatuses },
+            scheduledDate: { $gte: startOfDay, $lte: endOfDay }
+          }).select('workerId scheduledDate scheduledTime timeSlot')
         ]);
 
-        const capacity = 1 + onlineWorkersCount;
+        // Identity pool for this request: the owner slot + every currently online worker.
+        const pool = new Set(['OWNER', ...onlineWorkers.map(w => w._id.toString())]);
 
-        if (activeBookingsCount >= capacity) {
-          console.log(`[LocationService] Filtering out vendor ${vendor.name || vendor._id} due to capacity limit. Active: ${activeBookingsCount}, Capacity: ${capacity}`);
+        // Only bookings whose buffered window actually overlaps the requested slot count as
+        // conflicts — this is what gives the admin's Booking Lock Window setting a real effect.
+        const conflicting = candidateBookings.filter(job => {
+          const jobStart = parseScheduledStartTime(job.scheduledDate, job.timeSlot?.start || job.scheduledTime);
+          const jobEnd = job.timeSlot?.end
+            ? parseScheduledStartTime(job.scheduledDate, job.timeSlot.end)
+            : jobStart;
+          const bufferedJobStart = new Date(jobStart.getTime() - busyBufferMs);
+          return requestedStart <= jobEnd && bufferedJobStart <= requestedEnd;
+        });
+
+        // Consume specific-worker identities first (another worker's booking never blocks the
+        // owner or a different worker), then let unassigned/self bookings consume whatever
+        // generic identity remains (owner preferred, else any remaining worker).
+        for (const job of conflicting) {
+          if (job.workerId) {
+            pool.delete(job.workerId.toString());
+          }
+        }
+        for (const job of conflicting) {
+          if (!job.workerId) {
+            if (pool.size === 0) break;
+            const next = pool.has('OWNER') ? 'OWNER' : pool.values().next().value;
+            pool.delete(next);
+          }
+        }
+
+        if (pool.size === 0) {
+          console.log(`[LocationService] Filtering out vendor ${vendor.name || vendor._id} — no free owner/worker identity for the requested slot (buffer: ${busyBufferHours}h).`);
           return null;
         }
 

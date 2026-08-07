@@ -181,28 +181,14 @@ const createBooking = async (req, res) => {
       }
     }
 
-    // Booking Control toggle — if the zone admin who owns this zone has it turned ON, every
-    // booking in their zone routes to the manual-assign queue ('pending_admin') for them to
-    // review and assign a vendor themselves, instead of auto-matching or honoring a direct
-    // vendor pick. OFF (default) leaves today's flow completely unchanged.
-    let bookingControlActive = false;
-    if (resolvedBookingZone) {
-      const Admin = require('../../models/Admin');
-      const controllingZoneAdmin = await Admin.findOne({
-        isActive: true,
-        bookingControlEnabled: true,
-        $or: [{ zoneId: resolvedBookingZone._id }, { assignedZones: resolvedBookingZone._id }]
-      }).select('_id').lean();
-      bookingControlActive = !!controllingZoneAdmin;
-      if (bookingControlActive) {
-        console.log(`[CreateBooking] Booking Control is ON for zone ${resolvedBookingZone.name} — routing to manual admin assignment.`);
-      }
-    }
-
-    if (bookingControlActive) {
-      // Skip vendor search entirely — this booking goes straight to the zone admin's queue.
-      nearbyVendors = [];
-    } else if (vendorId) {
+    // NOTE: the "Booking Control" toggle (Admin.bookingControlEnabled) used to skip vendor
+    // search entirely and route every booking in that zone straight to the admin queue whenever
+    // a zone admin had it turned ON. That's no longer how bookings work: every booking now
+    // always searches for a vendor in its zone first, exactly like a zone with the toggle OFF —
+    // only when no vendor is found (or none accept) does it fall back to the admin queue (which
+    // already correctly notifies the specific zone admin responsible for that zone). The toggle
+    // field/UI is left in place (dormant) rather than removed, per explicit instruction.
+    if (vendorId) {
       // DIRECT BOOKING: User picked a specific vendor
       console.log(`[CreateBooking] Direct booking for vendorId: ${vendorId}`);
       const targetVendor = await Vendor.findById(vendorId).select('name businessName phone address isOnline availability approvalStatus isActive geoLocation settings zoneId zoneIds');
@@ -965,47 +951,14 @@ const createBooking = async (req, res) => {
           booking.status = 'pending_admin';
           await booking.save();
 
-          // Save notification in database for all admins
-          try {
-            const User = require('../../models/User');
-            const { createNotification } = require('../notificationControllers/notificationController');
-            const admins = await User.find({ role: 'ADMIN' });
-            
-            const notificationData = {
-              userId: null,
-              vendorId: null,
-              workerId: null,
-              type: 'admin_booking_requested',
-              title: 'Manual Assignment Needed',
-              message: `Booking #${booking.bookingNumber} has no available vendors. Manual assignment needed.`,
-              priority: 'high',
-              pushData: {
-                type: 'admin_booking_requested',
-                bookingId: booking._id.toString(),
-                link: `/admin/bookings/${booking._id}`
-              }
-            };
-            
-            await Promise.all(
-              admins.map(admin =>
-                createNotification({ ...notificationData, adminId: admin._id })
-              )
-            );
-          } catch (dbNotifErr) {
-            console.error('[CreateBooking] Failed to save background admin notification:', dbNotifErr);
-          }
-
-          // Emit to all admins
-          const { getIO } = require('../../sockets');
-          const io = getIO();
-          if (io) {
-            io.to('all_admins').emit('admin_booking_requested', {
-              bookingId: booking._id.toString(),
-              bookingNumber: booking.bookingNumber,
-              status: 'pending_admin',
-              message: 'No online vendors available. Booking request sent to admin for manual assignment.'
-            });
-          }
+          // Notify the Zone Admin(s) responsible for this booking's zone (plus Super Admin for
+          // oversight) — see utils/adminNotifyHelper.js for why the old User.find({role:'ADMIN'})
+          // + io.to('all_admins') pattern never actually reached the right admin.
+          const { notifyBookingAdmins } = require('../../utils/adminNotifyHelper');
+          await notifyBookingAdmins(booking, {
+            title: 'Manual Assignment Needed',
+            message: `Booking #${booking.bookingNumber} has no available vendors. Manual assignment needed.`
+          });
         }
 
         // Calculate vendor deduction amount
@@ -1436,8 +1389,9 @@ const cancelBooking = async (req, res) => {
     ) && !booking.vendorId;
 
     if (!freeToCancel) {
+      const { CANCEL_WINDOW_MS } = require('../../utils/constants');
       const timeSinceBookingMs = Date.now() - new Date(booking.createdAt).getTime();
-      if (timeSinceBookingMs > 3 * 60 * 1000) { // 3 minutes in ms
+      if (timeSinceBookingMs > CANCEL_WINDOW_MS) {
         return res.status(400).json({
           success: false,
           message: 'You can only cancel a booking within 3 minutes of creating it.'
@@ -1726,6 +1680,11 @@ const rescheduleBooking = async (req, res) => {
 
     if (booking.bookingType === 'scheduled' && booking.vendorId) {
       // Slot booking with assigned vendor: send approval request
+      const Settings = require('../../models/Settings');
+      const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+      const rescheduleResponseTimeoutMinutes = globalSettings?.rescheduleResponseTimeoutMinutes || 10;
+      const requestedAt = new Date();
+
       booking.rescheduleRequest = {
         status: 'pending',
         newScheduledDate: new Date(scheduledDate),
@@ -1734,9 +1693,10 @@ const rescheduleBooking = async (req, res) => {
           start: timeSlot.start,
           end: timeSlot.end
         },
-        requestedAt: new Date()
+        requestedAt,
+        expiresAt: new Date(requestedAt.getTime() + rescheduleResponseTimeoutMinutes * 60 * 1000)
       };
-      
+
       await booking.save();
 
       // Emit socket event to vendor

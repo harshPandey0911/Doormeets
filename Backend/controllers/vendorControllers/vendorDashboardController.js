@@ -204,7 +204,13 @@ const getDashboardStats = async (req, res) => {
       success: true,
       data: {
         config: {
-          maxSearchTime: globalSettings?.maxSearchTime || 5,
+          // maxSearchTime is now always DERIVED from waveDuration (the field bookingScheduler.js
+          // actually enforces as the real wave/search timeout), never read as its own separately-
+          // settable value — the two used to be independent fields that could silently drift out
+          // of sync (a stray waveDuration=60s + stale maxSearchTime=5 min meant the vendor pop-up
+          // countdown showed 5:00 while the real backend timeout fired at 1:00). One source of
+          // truth now; this can never happen again regardless of what sets waveDuration.
+          maxSearchTime: Math.max(1, Math.round((globalSettings?.waveDuration || 60) / 60)),
           waveDuration: globalSettings?.waveDuration || 60
         },
         stats: {

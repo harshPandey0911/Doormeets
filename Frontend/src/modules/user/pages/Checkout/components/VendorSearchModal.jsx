@@ -1,18 +1,20 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { themeColors } from '../../../../../theme';
 import { FiClock, FiStar, FiChevronRight, FiCheck, FiX, FiUser, FiAlertCircle } from 'react-icons/fi';
+import { getCancelCountdownSeconds } from '../../../../../utils/timeSlotUtils';
 
-const VendorSearchModal = ({ 
-  isOpen, 
-  onClose, 
-  currentStep, 
-  acceptedVendor, 
-  onRetry, 
-  bids = [], 
-  onSelectBid, 
+const VendorSearchModal = ({
+  isOpen,
+  onClose,
+  currentStep,
+  acceptedVendor,
+  onRetry,
+  bids = [],
+  onSelectBid,
   onWait,
   onCancelSearch,
   bookingDeadline,
+  bookingCreatedAt, // Used to drive the same 3-minute Cancel-window as BookingDetails/the backend
   maxSearchTimeMinutes = 10 // Total search time from settings (default 10 min)
 }) => {
   const [dots, setDots] = useState('.');
@@ -105,6 +107,21 @@ const VendorSearchModal = ({
     return () => clearInterval(interval);
   }, [isOpen, bookingDeadline, viewMode]);
 
+  // Same 3-minute self-cancel window enforced everywhere else (BookingDetails page, and
+  // server-side in userBookingController.js's cancelBooking) — previously this "Cancel Search"
+  // button had no time limit at all and stayed visible indefinitely. `null` (createdAt not yet
+  // known) deliberately fails OPEN — button stays visible, same as the old unconditional
+  // behavior — only a real elapsed 3-minute reading hides it.
+  const [cancelCountdown, setCancelCountdown] = useState(null);
+  useEffect(() => {
+    if (!isOpen || !bookingCreatedAt) return;
+    const tick = () => setCancelCountdown(getCancelCountdownSeconds(bookingCreatedAt));
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [isOpen, bookingCreatedAt]);
+  const canStillCancel = cancelCountdown === null || cancelCountdown > 0;
+
   const handleCancelClick = () => {
     setShowCancelConfirm(true);
   };
@@ -173,14 +190,16 @@ const VendorSearchModal = ({
               Up to {maxSearchTimeMinutes} min search window
             </p>
 
-            {/* Cancel Search Button */}
-            <button
-              onClick={handleCancelClick}
-              className="w-full py-3.5 rounded-2xl border-2 border-red-100 bg-red-50/60 text-red-500 text-xs font-semibold uppercase tracking-widest transition-all active:scale-95 hover:bg-red-50 flex items-center justify-center gap-2"
-            >
-              <FiX className="w-4 h-4" strokeWidth={2.5} />
-              Cancel Search
-            </button>
+            {/* Cancel Search Button — hidden automatically 3 minutes after booking creation */}
+            {canStillCancel && (
+              <button
+                onClick={handleCancelClick}
+                className="w-full py-3.5 rounded-2xl border-2 border-red-100 bg-red-50/60 text-red-500 text-xs font-semibold uppercase tracking-widest transition-all active:scale-95 hover:bg-red-50 flex items-center justify-center gap-2"
+              >
+                <FiX className="w-4 h-4" strokeWidth={2.5} />
+                Cancel Search{cancelCountdown != null ? ` (${Math.floor(cancelCountdown / 60)}:${(cancelCountdown % 60).toString().padStart(2, '0')})` : ''}
+              </button>
+            )}
           </div>
         )}
 

@@ -153,13 +153,26 @@ export const SocketProvider = ({ children }) => {
 
     setSocket(newSocket);
 
+    // Only force-refresh the FCM token on this socket's FIRST connect — every subsequent
+    // 'connect' (i.e. every auto-reconnect after a network blip) hits the cheap localStorage-
+    // cached path instead. 'connect' fires on every reconnect, not just the initial one, and
+    // forceUpdate=true previously ran the full chain (service-worker update fetch + Firebase
+    // getToken + a backend POST) on EVERY one of them — on a flaky mobile connection that cycled
+    // roughly every 2.5-7.5s (the socket.io backoff window), this was real un-debounced main-
+    // thread work repeating often enough to look like the page "blinking".
+    let hasForcedFcmRefresh = false;
+
     newSocket.on('connect', () => {
       // console.log(`✅ ${userType.toUpperCase()} App Socket connected`);
 
       // Register FCM token for push notifications (on page load/refresh)
       if (userType && token) {
         // console.log(`[SocketContext] Registering FCM token for ${userType}...`);
-        registerFCMToken(userType, true).then((fcmToken) => {
+        const shouldForce = !hasForcedFcmRefresh;
+        hasForcedFcmRefresh = true; // set synchronously, before the async call, so two rapid
+        // reconnects in a row (before the first registerFCMToken call even resolves) can't both
+        // see shouldForce=true and double up the expensive path.
+        registerFCMToken(userType, shouldForce).then((fcmToken) => {
           if (fcmToken) {
             // console.log(`[SocketContext] ✅ FCM token registered for ${userType}`);
           } else {

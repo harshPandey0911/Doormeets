@@ -318,6 +318,21 @@ const settingsSchema = new mongoose.Schema({
     default: 1, // default 1 hour before scheduled time
     min: 0
   },
+  // How long a vendor has to respond (accept/reject) to a reschedule request before it's
+  // auto-treated as a rejection: vendor unassigned, booking re-broadcast to all eligible
+  // vendors (including the original one) at the newly requested time.
+  rescheduleResponseTimeoutMinutes: {
+    type: Number,
+    default: 10,
+    min: 1
+  },
+  // How many minutes before a scheduled booking's start time the vendor (and worker, if
+  // assigned) gets an automatic reminder notification — push + socket + in-app.
+  bookingReminderMinutes: {
+    type: Number,
+    default: 60,
+    min: 1
+  },
   instantBookingMarkup: {
     type: Number,
     default: 99, // default 99 Rs extra markup fee

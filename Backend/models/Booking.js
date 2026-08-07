@@ -387,9 +387,18 @@ const bookingSchema = new mongoose.Schema({
       start: { type: String },
       end: { type: String }
     },
-    requestedAt: { type: Date, default: null }
+    requestedAt: { type: Date, default: null },
+    // When a pending request auto-expires (vendor never accepted/rejected in time):
+    // requestedAt + Settings.rescheduleResponseTimeoutMinutes. Consumed by the periodic
+    // bookingAvailabilityScheduler task, which unassigns the vendor and re-broadcasts.
+    expiresAt: { type: Date, default: null }
   },
   hasBeenRescheduled: {
+    type: Boolean,
+    default: false
+  },
+  // Guards against duplicate "you have a booking scheduled at X" reminder sends.
+  reminderSent: {
     type: Boolean,
     default: false
   },

@@ -340,11 +340,15 @@ const createOrUpdateBill = async (req, res) => {
       levelCommPct: pricing ? Number(pickLevelCommission(pricing, vendorCurrentLevel, globalLevelCommPct)) : globalLevelCommPct
     });
 
-    // Add vendor's instant booking markup share if applicable — a flat bonus on top of the
-    // cascade above, not itself subject to sgst/cgst/commission.
+    // Instant booking markup — a flat convenience fee on top of the cascade above, split
+    // between vendor and platform by instantBookingVendorShare. Neither half is subject to
+    // sgst/cgst/commission (it's not part of the taxable service cascade at all).
     let vendorInstantMarkupShare = 0;
+    let adminInstantMarkupShare = 0;
     if (booking.bookingType === 'instant') {
+      const configuredMarkup = settings?.instantBookingMarkup !== undefined ? settings.instantBookingMarkup : 99;
       vendorInstantMarkupShare = settings?.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
+      adminInstantMarkupShare = Math.max(0, configuredMarkup - vendorInstantMarkupShare);
     }
 
     let vendorServiceEarning = parseFloat((originalSettlement.vendorEarning + vendorInstantMarkupShare).toFixed(2));
@@ -356,7 +360,13 @@ const createOrUpdateBill = async (req, res) => {
     let levelCommissionAmount = originalSettlement.levelCommissionAmount;
     let adminMarginGross = originalSettlement.adminMarginGross;
     let adminMarginGst = originalSettlement.adminMarginGst;
-    let adminMarginNet = originalSettlement.adminMarginNet;
+    // adminInstantMarkupShare is added directly to the NET figure only — mirroring the vendor's
+    // side, it's a flat untaxed bonus, not part of the taxable margin (adminMarginGross/Gst stay
+    // scoped to the actual service). Previously this was never added anywhere in this
+    // margin/profit calculation at all — companyRevenue (below) already netted it out correctly
+    // via subtraction, but adminMarginGross/Net (and downstream platformCommission/
+    // platformProfit) silently dropped the admin's share of every instant booking's markup.
+    let adminMarginNet = parseFloat((originalSettlement.adminMarginNet + adminInstantMarkupShare).toFixed(2));
 
     addonServiceSettlements.forEach(s => {
       vendorServiceEarning = parseFloat((vendorServiceEarning + s.vendorEarning).toFixed(2));

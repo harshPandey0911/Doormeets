@@ -65,6 +65,66 @@ const calculateTotalAcceptanceFee = (serviceDoc, bookedItems) => {
 };
 
 /**
+ * Some services have no fixed `packages`/`serviceGroups` at all — instead the customer picks
+ * one or more free-form "variant" add-ons together in a single "Customized Items" selection
+ * (e.g. "AC Switchboard Installation" + "1 Switch" booked in the same request). That whole
+ * selection collapses into ONE booking.bookedItems entry with a combined price, so per-item
+ * matching against bookedItems (like calculateTotalAcceptanceFee does) can't see the individual
+ * variants at all — it always returns 0 for these bookings, which used to silently fall through
+ * to a single arbitrary PricingConfig record for the whole booking instead of summing.
+ *
+ * Each variant's own acceptance fee lives on its own per-variant PricingConfig row (matched by
+ * `variantId`), not on the variant subdocument itself. Which variants were actually selected is
+ * recovered from booking.dynamicFields's "Selected Variants" entry (the only place that survives
+ * to the booking — see PremiumServiceDetailPage.jsx), formatted as e.g.
+ * "AC Switchboard Installation (x1) (+₹100), 1 Switch (x1) (+₹120)".
+ *
+ * @param {Object} serviceDoc - Service doc with `variants` selected.
+ * @param {Array}  dynamicFields - booking.dynamicFields.
+ * @param {Array}  pricings - PricingConfig docs already fetched for this serviceId (reused, no extra query).
+ * @param {Object} context - { zoneId, cityId, brandId } tie-break preference, mirroring the
+ *                            existing single-pricing fallback's own preference order.
+ * @returns {number} Total acceptance fee in rupees across every selected variant.
+ */
+const calculateVariantAcceptanceFee = (serviceDoc, dynamicFields, pricings, context = {}) => {
+  let total = 0;
+  if (!serviceDoc || !Array.isArray(serviceDoc.variants) || serviceDoc.variants.length === 0) return total;
+  if (!Array.isArray(dynamicFields) || !Array.isArray(pricings) || pricings.length === 0) return total;
+
+  const variantsField = dynamicFields.find(f => f.name === 'Selected Variants');
+  if (!variantsField || !variantsField.value) return total;
+
+  const entries = String(variantsField.value).split(',').map(s => s.trim()).filter(Boolean);
+
+  for (const entry of entries) {
+    const qtyMatch = entry.match(/\(x(\d+)\)/);
+    const qty = qtyMatch ? (parseInt(qtyMatch[1], 10) || 1) : 1;
+    const title = entry.replace(/\s*\(x\d+\)/, '').replace(/\s*\(\+₹[\d.]+\)/, '').trim();
+    if (!title) continue;
+
+    const matchedVariant = serviceDoc.variants.find(v => v.title === title) ||
+      serviceDoc.variants.find(v => title.endsWith(` - ${v.title}`) || title.includes(v.title));
+    if (!matchedVariant) continue;
+
+    const variantId = String(matchedVariant._id);
+    const variantPricings = pricings.filter(p => p.variantId && String(p.variantId) === variantId);
+    if (variantPricings.length === 0) continue;
+
+    let matched = null;
+    if (context.zoneId) matched = variantPricings.find(p => p.zoneId && String(p.zoneId) === String(context.zoneId));
+    if (!matched && context.cityId) matched = variantPricings.find(p => p.cityId && String(p.cityId) === String(context.cityId));
+    if (!matched && context.brandId) matched = variantPricings.find(p => p.brandId && String(p.brandId) === String(context.brandId));
+    if (!matched) matched = variantPricings.find(p => !p.zoneId && !p.cityId && !p.brandId) || variantPricings[0];
+
+    if (matched && matched.vendorAcceptanceFee > 0) {
+      total += matched.vendorAcceptanceFee * qty;
+    }
+  }
+
+  return total;
+};
+
+/**
  * Same idea for the estimated vendor payout shown/used at accept time (booking.vendorShare
  * preview) — sum every booked item's package payout instead of only the first one.
  */
@@ -92,4 +152,4 @@ const calculateTotalPackagePayout = (serviceDoc, bookedItems) => {
   return total;
 };
 
-module.exports = { calculateTotalAcceptanceFee, calculateTotalPackagePayout };
+module.exports = { calculateTotalAcceptanceFee, calculateTotalPackagePayout, calculateVariantAcceptanceFee };

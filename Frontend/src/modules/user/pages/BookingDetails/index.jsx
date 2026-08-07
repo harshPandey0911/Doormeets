@@ -43,6 +43,7 @@ import NotificationBell from '../../components/common/NotificationBell';
 import { apiCache } from '../../../../utils/apiCache';
 import { configService } from '../../../../services/configService';
 import { downloadInvoice } from '../../utils/invoiceGenerator';
+import { getCancelCountdownSeconds } from '../../../../utils/timeSlotUtils';
 
 
 const toAssetUrl = (url) => {
@@ -125,14 +126,7 @@ const BookingDetails = () => {
     if (!booking) return;
 
     const checkTime = () => {
-      const createdTime = new Date(booking.createdAt).getTime();
-      const elapsedMs = Date.now() - createdTime;
-      const remainingMs = (3 * 60 * 1000) - elapsedMs;
-      if (remainingMs > 0) {
-        setCancelCountdown(Math.ceil(remainingMs / 1000));
-      } else {
-        setCancelCountdown(0);
-      }
+      setCancelCountdown(getCancelCountdownSeconds(booking.createdAt));
     };
 
     checkTime();

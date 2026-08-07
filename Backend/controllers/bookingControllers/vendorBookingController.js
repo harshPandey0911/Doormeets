@@ -5,7 +5,7 @@ const { validationResult } = require('express-validator');
 const { BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
 const { createNotification } = require('../notificationControllers/notificationController');
 const { sendNotificationToUser, sendNotificationToVendor, sendNotificationToWorker } = require('../../services/firebaseAdmin');
-const { calculateTotalAcceptanceFee, calculateTotalPackagePayout } = require('../../utils/acceptanceFeeHelper');
+const { calculateTotalAcceptanceFee, calculateTotalPackagePayout, calculateVariantAcceptanceFee } = require('../../utils/acceptanceFeeHelper');
 
 /**
  * Get vendor bookings with filters
@@ -218,8 +218,20 @@ const getBookingById = async (req, res) => {
           let acceptanceFee = 0;
           try {
             const Service = require('../../models/Service');
-            const serviceDoc = await Service.findById(booking.serviceId).select('serviceType packages serviceGroups').lean();
+            const serviceDoc = await Service.findById(booking.serviceId).select('serviceType packages serviceGroups variants').lean();
             acceptanceFee = calculateTotalAcceptanceFee(serviceDoc, booking.bookedItems);
+
+            // A booking can also bundle several free-form "variant" add-ons picked together
+            // instead of fixed packages — each has its own vendorAcceptanceFee on a per-variant
+            // PricingConfig row, so it must be summed too rather than falling through to a
+            // single arbitrary record below.
+            if (acceptanceFee === 0) {
+              acceptanceFee = calculateVariantAcceptanceFee(serviceDoc, booking.dynamicFields, pricings, {
+                zoneId: booking.zoneId,
+                cityId: booking.cityId,
+                brandId: booking.brandId
+              });
+            }
           } catch (err) {
             console.error('[getBookingById] Error checking sub-package acceptance fee:', err);
           }
@@ -409,6 +421,28 @@ const acceptBooking = async (req, res) => {
       });
     }
 
+    // Atomically claim this booking RIGHT NOW — this single DB-level compare-and-swap is what
+    // actually decides who wins when a broadcast wave notifies many vendors at once (e.g. 20
+    // vendors get the pop-up simultaneously) and more than one taps Accept within the same
+    // instant. Everything above this point only checked the in-memory `booking` object loaded
+    // independently by THIS request — two concurrent requests could both pass those checks
+    // (both see vendorId: null from their own fetch) and, without this atomic step, whichever
+    // one's `booking.save()` reached MongoDB last would silently win, potentially clobbering the
+    // other vendor's acceptance. The filter (`vendorId: null`, status still in allowedStatuses)
+    // guarantees only the first request to reach MongoDB actually claims it; every other
+    // concurrent request gets `null` back and is correctly told the job is already taken.
+    const claimResult = await Booking.findOneAndUpdate(
+      { _id: id, vendorId: null, status: { $in: allowedStatuses } },
+      { $set: { vendorId, status: statusToSet } },
+      { new: false }
+    );
+    if (!claimResult) {
+      return res.status(409).json({
+        success: false,
+        message: 'Sorry, this job has already been accepted by another vendor.'
+      });
+    }
+
     // Calculate estimated vendorShare (payout) based on Admin Pricing Config or Package Payouts.
     // Summed across every booked item — a booking can bundle several packages together.
     let packageVendorPayout = 0;
@@ -422,8 +456,9 @@ const acceptBooking = async (req, res) => {
 
     const PricingConfig = require('../../models/PricingConfig');
     let pricing = null;
+    let pricings = [];
     if (booking.serviceId) {
-      const pricings = await PricingConfig.find({ serviceId: booking.serviceId });
+      pricings = await PricingConfig.find({ serviceId: booking.serviceId });
       if (pricings.length > 0) {
         if (booking.zoneId) {
           pricing = pricings.find(p => p.zoneId && String(p.zoneId) === String(booking.zoneId));
@@ -533,8 +568,20 @@ const acceptBooking = async (req, res) => {
 
     try {
       const Service = require('../../models/Service');
-      const serviceDoc = await Service.findById(booking.serviceId).select('serviceType packages serviceGroups').lean();
+      const serviceDoc = await Service.findById(booking.serviceId).select('serviceType packages serviceGroups variants').lean();
       acceptanceFee = calculateTotalAcceptanceFee(serviceDoc, booking.bookedItems);
+
+      // A booking can also bundle several free-form "variant" add-ons picked together (e.g.
+      // "AC Switchboard Installation" + "1 Switch") instead of fixed packages — each has its
+      // own vendorAcceptanceFee on a per-variant PricingConfig row, so it must be summed too
+      // rather than falling through to a single arbitrary PricingConfig record below.
+      if (acceptanceFee === 0) {
+        acceptanceFee = calculateVariantAcceptanceFee(serviceDoc, booking.dynamicFields, pricings, {
+          zoneId: booking.zoneId,
+          cityId: booking.cityId,
+          brandId: booking.brandId
+        });
+      }
     } catch (err) {
       console.error('[AcceptBooking] Error checking sub-package acceptance fee:', err);
     }
@@ -2781,8 +2828,20 @@ const getPendingBookings = async (req, res) => {
         let acceptanceFee = 0;
         try {
           const Service = require('../../models/Service');
-          const serviceDoc = await Service.findById(r.bookingId.serviceId).select('serviceType packages serviceGroups').lean();
+          const serviceDoc = await Service.findById(r.bookingId.serviceId).select('serviceType packages serviceGroups variants').lean();
           acceptanceFee = calculateTotalAcceptanceFee(serviceDoc, r.bookingId.bookedItems);
+
+          // A booking can also bundle several free-form "variant" add-ons picked together
+          // instead of fixed packages — each has its own vendorAcceptanceFee on a per-variant
+          // PricingConfig row, so it must be summed too rather than falling through to a
+          // single arbitrary record below.
+          if (acceptanceFee === 0) {
+            acceptanceFee = calculateVariantAcceptanceFee(serviceDoc, r.bookingId.dynamicFields, pricings, {
+              zoneId: r.bookingId.zoneId,
+              cityId: r.bookingId.cityId,
+              brandId: r.bookingId.brandId
+            });
+          }
         } catch (err) {
           console.error('[getPendingBookings] Error checking sub-package acceptance fee:', err);
         }
@@ -3098,6 +3157,68 @@ const acceptReschedule = async (req, res) => {
   }
 };
 
+/**
+ * Shared core of "vendor didn't accept a reschedule": unassign the vendor, apply the
+ * newly-requested time, and kick off a fresh broadcast to all eligible vendors
+ * (including the previously-assigned one — there is no exclusion list, by design).
+ * Used both by the vendor's explicit Reject action and by the scheduler's auto-timeout
+ * task when a vendor never responds within Settings.rescheduleResponseTimeoutMinutes.
+ * `booking` must be a full mongoose document (not .lean()) with a pending rescheduleRequest.
+ */
+const unassignVendorForPendingReschedule = async (booking) => {
+  const previousVendorId = booking.vendorId;
+
+  // Vendor didn't accept (rejected or timed out): unassign and change status to searching
+  booking.rescheduleRequest.status = 'rejected';
+
+  // Unassign vendor
+  booking.vendorId = null;
+  booking.status = 'searching';
+  booking.workerId = null;
+
+  // Apply reschedule since user wanted it
+  booking.scheduledDate = booking.rescheduleRequest.newScheduledDate;
+  booking.scheduledTime = booking.rescheduleRequest.newScheduledTime;
+  booking.timeSlot = booking.rescheduleRequest.newTimeSlot;
+  booking.hasBeenRescheduled = true;
+
+  await booking.save();
+
+  // Free the previous vendor and sync their busy status
+  if (previousVendorId) {
+    const Vendor = require('../../models/Vendor');
+    await Vendor.findByIdAndUpdate(previousVendorId, {
+      availability: 'AVAILABLE',
+      workStatus: 'available',
+      availabilityStatus: 'ONLINE',
+      reservedFrom: null,
+      reservedBookingId: null
+    });
+    await Vendor.updateWorkStatus(previousVendorId);
+  }
+
+  // Trigger broadcast booking search for new vendors in the background
+  const { getScheduler } = require('../../services/bookingScheduler');
+  const scheduler = getScheduler();
+  if (scheduler) {
+    scheduler.broadcastBookingSearch(booking._id).catch(err => {
+      console.error('[unassignVendorForPendingReschedule] Background broadcast failed:', err);
+    });
+  }
+
+  const { createNotification } = require('../notificationControllers/notificationController');
+  await createNotification({
+    userId: booking.userId,
+    type: 'reschedule_rejected',
+    title: 'Reschedule: Finding New Vendor',
+    message: `Your previously assigned vendor couldn't accommodate the new time. We are finding a new vendor for booking ${booking.bookingNumber}.`,
+    relatedId: booking._id,
+    relatedType: 'booking'
+  });
+
+  return booking;
+};
+
 const rejectReschedule = async (req, res) => {
   try {
     const vendorId = req.user.id;
@@ -3114,51 +3235,7 @@ const rejectReschedule = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No pending reschedule request found' });
     }
 
-    // Vendor rejected: Unassign vendor and change status to searching
-    booking.rescheduleRequest.status = 'rejected';
-    
-    // Unassign vendor
-    booking.vendorId = null;
-    booking.status = 'searching';
-    booking.workerId = null;
-    
-    // Apply reschedule since user wanted it
-    booking.scheduledDate = booking.rescheduleRequest.newScheduledDate;
-    booking.scheduledTime = booking.rescheduleRequest.newScheduledTime;
-    booking.timeSlot = booking.rescheduleRequest.newTimeSlot;
-    booking.hasBeenRescheduled = true;
-    
-    await booking.save();
-
-    // Free vendor and sync their busy status
-    const Vendor = require('../../models/Vendor');
-    await Vendor.findByIdAndUpdate(vendorId, {
-      availability: 'AVAILABLE',
-      workStatus: 'available',
-      availabilityStatus: 'ONLINE',
-      reservedFrom: null,
-      reservedBookingId: null
-    });
-    await Vendor.updateWorkStatus(vendorId);
-
-    // Trigger broadcast booking search for new vendors in the background
-    const { getScheduler } = require('../../services/bookingScheduler');
-    const scheduler = getScheduler();
-    if (scheduler) {
-      scheduler.broadcastBookingSearch(booking._id).catch(err => {
-        console.error('[rejectReschedule] Background broadcast failed:', err);
-      });
-    }
-    
-    const { createNotification } = require('../notificationControllers/notificationController');
-    await createNotification({
-      userId: booking.userId,
-      type: 'reschedule_rejected',
-      title: 'Reschedule: Finding New Vendor',
-      message: `Your previously assigned vendor couldn't accommodate the new time. We are finding a new vendor for booking ${booking.bookingNumber}.`,
-      relatedId: booking._id,
-      relatedType: 'booking'
-    });
+    await unassignVendorForPendingReschedule(booking);
 
     res.status(200).json({
       success: true,
@@ -3434,6 +3511,7 @@ module.exports = {
   requestCancelBooking,
   acceptReschedule,
   rejectReschedule,
+  unassignVendorForPendingReschedule,
   refundVendorLeadFee,
   approveWorkerWork,
   rejectWorkerWork

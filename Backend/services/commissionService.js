@@ -256,9 +256,13 @@ async function processBookingCompletion(bookingId) {
         // Admin's own margin is customerPrice-equivalent minus the vendor's gross base payout
         // — BEFORE any of the vendor-side sgst/cgst/commission deductions above, which are the
         // vendor's own tax/commission obligations, not platform revenue subject to this GST.
+        // Also subtract `instantShare` — `amount` already includes the full instant markup, and
+        // vendorShare above already paid the vendor their `instantShare` cut of it; without this
+        // subtraction here too, that same money was being counted as admin's margin AND handed
+        // to the vendor at the same time (adminMarginGross + vendorShare exceeded `amount`).
         const gstPctForMargin = pricing ? Number(pricing.gstPercentage ?? 18) : 18;
         const gstIncludedForMargin = pricing ? (pricing.gstIncluded !== false) : true;
-        adminMarginGross = Math.max(0, parseFloat((amount - basePayout).toFixed(2)));
+        adminMarginGross = Math.max(0, parseFloat((amount - basePayout - instantShare).toFixed(2)));
         ({ gst: adminMarginGst, net: adminMarginNet } = splitMarginGst(adminMarginGross, gstPctForMargin, gstIncludedForMargin));
       } else if (booking.bookingType === 'instant' && settings) {
         const markupFee = settings.instantBookingMarkup !== undefined ? settings.instantBookingMarkup : 99;

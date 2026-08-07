@@ -63,6 +63,8 @@ class BookingAvailabilityScheduler {
       await this.processAutoReservations();
       await this.processUpcomingReconfirmations();
       await this.processReconfirmationTimeouts();
+      await this.processRescheduleTimeouts();
+      await this.processBookingReminders();
     } catch (error) {
       console.error('[BookingAvailabilityScheduler] Error in runTasks:', error);
     }
@@ -251,6 +253,131 @@ class BookingAvailabilityScheduler {
       }
     } catch (err) {
       console.error('[BookingAvailabilityScheduler] Error in processReconfirmationTimeouts:', err);
+    }
+  }
+
+  /**
+   * Task 4: Reschedule Response Timeouts
+   * If the currently assigned vendor never accepts/rejects a pending reschedule request
+   * within Settings.rescheduleResponseTimeoutMinutes, auto-treat it as a rejection: unassign
+   * the vendor, apply the newly-requested time, and re-broadcast to all eligible vendors
+   * (including the previous one — no exclusion list, matching the manual Reject path exactly).
+   */
+  async processRescheduleTimeouts() {
+    try {
+      const now = new Date();
+      const expiredBookings = await Booking.find({
+        'rescheduleRequest.status': 'pending',
+        'rescheduleRequest.expiresAt': { $ne: null, $lte: now }
+      });
+
+      if (expiredBookings.length === 0) return;
+
+      const { unassignVendorForPendingReschedule } = require('../controllers/bookingControllers/vendorBookingController');
+
+      for (const booking of expiredBookings) {
+        try {
+          await unassignVendorForPendingReschedule(booking);
+          console.log(`[BookingAvailabilityScheduler] Reschedule request for booking ${booking.bookingNumber} timed out — vendor unassigned and re-broadcast triggered.`);
+        } catch (err) {
+          console.error(`[BookingAvailabilityScheduler] Failed to process reschedule timeout for booking ${booking._id}:`, err);
+        }
+      }
+    } catch (err) {
+      console.error('[BookingAvailabilityScheduler] Error in processRescheduleTimeouts:', err);
+    }
+  }
+
+  /**
+   * Task 5: Vendor Booking Reminders
+   * Admin-configured "Reminder Before Booking" (Settings.bookingReminderMinutes, default 60).
+   * Once a scheduled, vendor-assigned booking's start time falls within that window, sends a
+   * one-time push + socket + in-app notification to the vendor (and worker, if assigned).
+   */
+  async processBookingReminders() {
+    try {
+      const Settings = require('../models/Settings');
+      const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+      const reminderMinutes = (globalSettings && globalSettings.bookingReminderMinutes !== undefined)
+        ? globalSettings.bookingReminderMinutes
+        : 60;
+
+      const bookings = await Booking.find({
+        status: { $in: ['accepted', 'assigned', 'confirmed'] },
+        bookingType: 'scheduled',
+        vendorId: { $ne: null },
+        reminderSent: false
+      });
+
+      if (bookings.length === 0) return;
+
+      const now = Date.now();
+      const { createNotification } = require('../controllers/notificationControllers/notificationController');
+
+      for (const booking of bookings) {
+        const slotStart = parseScheduledStartTime(booking.scheduledDate, booking.timeSlot?.start || booking.scheduledTime);
+        const reminderTriggerTime = slotStart.getTime() - reminderMinutes * 60 * 1000;
+
+        if (now < reminderTriggerTime) continue;
+
+        const displayTime = booking.scheduledTime || booking.timeSlot?.start || '';
+        const message = `You have a booking scheduled at ${displayTime}.`;
+
+        // Mark sent first so a slow notification call can't cause the next tick to duplicate it.
+        booking.reminderSent = true;
+        await booking.save();
+
+        if (this.io) {
+          this.io.to(`vendor_${booking.vendorId.toString()}`).emit('booking_reminder', {
+            bookingId: booking._id,
+            bookingNumber: booking.bookingNumber,
+            scheduledTime: displayTime,
+            message
+          });
+          if (booking.workerId) {
+            this.io.to(`worker_${booking.workerId.toString()}`).emit('booking_reminder', {
+              bookingId: booking._id,
+              bookingNumber: booking.bookingNumber,
+              scheduledTime: displayTime,
+              message
+            });
+          }
+        }
+
+        await createNotification({
+          vendorId: booking.vendorId,
+          type: 'booking_reminder',
+          title: 'Upcoming Booking Reminder',
+          message,
+          relatedId: booking._id,
+          relatedType: 'booking',
+          pushData: {
+            type: 'booking_reminder',
+            bookingId: booking._id.toString(),
+            link: `/vendor/bookings/${booking._id}`
+          }
+        });
+
+        if (booking.workerId) {
+          await createNotification({
+            workerId: booking.workerId,
+            type: 'booking_reminder',
+            title: 'Upcoming Booking Reminder',
+            message,
+            relatedId: booking._id,
+            relatedType: 'booking',
+            pushData: {
+              type: 'booking_reminder',
+              bookingId: booking._id.toString(),
+              link: `/worker/bookings/${booking._id}`
+            }
+          });
+        }
+
+        console.log(`[BookingAvailabilityScheduler] Reminder sent to Vendor ${booking.vendorId} for booking ${booking.bookingNumber} (${reminderMinutes}min before ${displayTime})`);
+      }
+    } catch (err) {
+      console.error('[BookingAvailabilityScheduler] Error in processBookingReminders:', err);
     }
   }
 }

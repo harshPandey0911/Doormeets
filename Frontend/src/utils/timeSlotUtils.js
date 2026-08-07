@@ -1,4 +1,23 @@
 /**
+ * How long a customer can self-cancel a booking with no vendor assigned yet (ms). Shared by
+ * every screen that shows a "Cancel" countdown (the initial vendor-search modal AND the booking
+ * details page) and matches the backend's own enforcement in userBookingController.js's
+ * cancelBooking — kept as one constant so the two can never silently drift apart.
+ */
+export const CANCEL_WINDOW_MS = 3 * 60 * 1000;
+
+/**
+ * Computes remaining cancel-window seconds from a booking's createdAt timestamp. Returns 0 once
+ * expired (never negative) — callers should hide the Cancel button when this reaches 0.
+ */
+export const getCancelCountdownSeconds = (createdAt) => {
+  if (!createdAt) return 0;
+  const elapsedMs = Date.now() - new Date(createdAt).getTime();
+  const remainingMs = CANCEL_WINDOW_MS - elapsedMs;
+  return remainingMs > 0 ? Math.ceil(remainingMs / 1000) : 0;
+};
+
+/**
  * Parses a time string like "09:00 AM" into minutes from midnight.
  */
 export const parseTimeStringToMinutes = (timeStr) => {

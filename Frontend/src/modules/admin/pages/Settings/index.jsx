@@ -35,6 +35,8 @@ const AdminSettings = () => {
     loyaltyPointsEarningRate: 1,
     loyaltyPointsRedemptionRate: 1,
     vendorBusyBufferHours: 1,
+    rescheduleResponseTimeoutMinutes: 10,
+    bookingReminderMinutes: 60,
     isInstantBookingEnabled: true,
     instantBookingMarkup: 99,
     instantBookingWaitTime: 45,
@@ -276,6 +278,8 @@ const AdminSettings = () => {
             loyaltyPointsEarningRate: res.settings.loyaltyPointsEarningRate !== undefined ? res.settings.loyaltyPointsEarningRate : 1,
             loyaltyPointsRedemptionRate: res.settings.loyaltyPointsRedemptionRate !== undefined ? res.settings.loyaltyPointsRedemptionRate : 1,
             vendorBusyBufferHours: res.settings.vendorBusyBufferHours !== undefined ? res.settings.vendorBusyBufferHours : 1,
+            rescheduleResponseTimeoutMinutes: res.settings.rescheduleResponseTimeoutMinutes !== undefined ? res.settings.rescheduleResponseTimeoutMinutes : 10,
+            bookingReminderMinutes: res.settings.bookingReminderMinutes !== undefined ? res.settings.bookingReminderMinutes : 60,
             isInstantBookingEnabled: res.settings.isInstantBookingEnabled !== undefined ? res.settings.isInstantBookingEnabled : true,
             instantBookingMarkup: res.settings.instantBookingMarkup !== undefined ? res.settings.instantBookingMarkup : 99,
             instantBookingWaitTime: res.settings.instantBookingWaitTime !== undefined ? res.settings.instantBookingWaitTime : 45,
@@ -1239,7 +1243,74 @@ const AdminSettings = () => {
                     </p>
                   </div>
 
+                  {/* Reschedule Response Timeout */}
+                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
+                    <div>
+                      <p className="font-semibold text-gray-800">Reschedule Response Timeout (Minutes)</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        How long the currently assigned vendor has to accept/reject a reschedule request before it's auto-treated as a rejection — vendor is unassigned and the booking is broadcast to all eligible vendors (including the original one) at the new time. Default: 10 minutes.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        name="rescheduleResponseTimeoutMinutes"
+                        value={financialSettings.rescheduleResponseTimeoutMinutes ?? 10}
+                        onChange={(e) => setFinancialSettings(prev => ({ ...prev, rescheduleResponseTimeoutMinutes: Number(e.target.value) }))}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-blue-500 bg-white"
+                        min="1"
+                      />
+                      <button
+                        onClick={async () => {
+                          try {
+                            await updateSettings({ rescheduleResponseTimeoutMinutes: financialSettings.rescheduleResponseTimeoutMinutes });
+                            toast.success('Reschedule response timeout updated successfully');
+                          } catch (error) {
+                            toast.error('Failed to update reschedule response timeout');
+                          }
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
 
+                  {/* Booking Reminder */}
+                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
+                    <div>
+                      <p className="font-semibold text-gray-800">Reminder Before Booking (Minutes)</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        How many minutes before a scheduled booking's start time the assigned vendor (and worker, if any) automatically gets a reminder — push notification, socket event, and in-app notification. Default: 60 minutes.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        name="bookingReminderMinutes"
+                        value={financialSettings.bookingReminderMinutes ?? 60}
+                        onChange={(e) => setFinancialSettings(prev => ({ ...prev, bookingReminderMinutes: Number(e.target.value) }))}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-blue-500 bg-white"
+                        min="1"
+                      />
+                      <button
+                        onClick={async () => {
+                          try {
+                            await updateSettings({ bookingReminderMinutes: financialSettings.bookingReminderMinutes });
+                            toast.success('Booking reminder timing updated successfully');
+                          } catch (error) {
+                            toast.error('Failed to update booking reminder timing');
+                          }
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+                      >
+                        Save
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-orange-600 font-medium">
+                      e.g. Set to <strong>60</strong> → for a 9:00 AM booking, the vendor is reminded at 8:00 AM
+                    </p>
+                  </div>
 
                 </div>
               </div>

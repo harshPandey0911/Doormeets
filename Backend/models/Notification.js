@@ -44,8 +44,12 @@ const notificationSchema = new mongoose.Schema({
       'booking_completed',
       'booking_rejected',
       'booking_rescheduled',
+      'reschedule_request',             // User requested a new time; sent to the assigned vendor for approval
+      'reschedule_accepted',            // Vendor accepted the user's requested new time
+      'reschedule_rejected',            // Vendor rejected/timed out; vendor freed, re-broadcasting for new time
       'booking_reconfirmation_request', // 30-min before slot reminder
       'booking_escalation',             // Admin alert: vendor missed reconfirmation
+      'booking_reminder',               // Admin-configured "you have a booking at X" reminder
       'job_accepted',
       'job_rejected',
       'job_cancelled',
@@ -83,6 +87,9 @@ const notificationSchema = new mongoose.Schema({
       'painting_inspection_complete', // User notified: inspection done, quote incoming
       'painting_slot_confirmed',      // User notified: scheduled slot confirmed by vendor
       'loyalty_points_earned',        // User notified: earned loyalty points on a completed booking
+      'referral_earned',              // Referee's signup bonus, or referrer's reward after referee's first booking
+      'shop_referral_earned',         // Shop owner/vendor referral reward credited
+      'admin_booking_requested',      // Admin (zone or super) notified: booking needs manual vendor assignment
       'general',
       'admin_broadcast'               // Admin manually sent broadcast/targeted notification
     ],

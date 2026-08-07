@@ -2852,6 +2852,7 @@ const Checkout = () => {
         }}
         onCancelSearch={handleCancelSearch}
         bookingDeadline={bookingRequest?.biddingDeadline}
+        bookingCreatedAt={bookingRequest?.createdAt}
         maxSearchTimeMinutes={maxSearchTimeMinutes}
       />
 

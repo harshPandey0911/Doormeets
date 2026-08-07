@@ -180,6 +180,11 @@ const BILL_STATUS = {
   CANCELLED: 'cancelled'
 };
 
+// How long a customer can self-cancel a booking with no vendor assigned yet (ms). Shared by
+// every place that enforces this window — matches Frontend/src/utils/timeSlotUtils.js's
+// CANCEL_WINDOW_MS so both sides can never silently drift apart.
+const CANCEL_WINDOW_MS = 3 * 60 * 1000;
+
 module.exports = {
   USER_ROLES,
   ADMIN_ROLES,
@@ -193,5 +198,6 @@ module.exports = {
   BILL_STATUS,
   TRAINING_LEVELS,
   TRAINING_SCORE_THRESHOLDS,
-  TRAINING_STATUS
+  TRAINING_STATUS,
+  CANCEL_WINDOW_MS
 };

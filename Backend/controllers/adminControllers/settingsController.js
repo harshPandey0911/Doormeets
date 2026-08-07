@@ -68,6 +68,12 @@ exports.updateSettings = async (req, res, next) => {
       referralRewardReferrer,
       referralRewardReferee,
       maxWalletUsagePercentage,
+      // Vendor Job Buffer / Reschedule / Reminder timing — previously vendorBusyBufferHours was
+      // rendered and editable in the admin UI but never actually reached this destructure, so
+      // saving it silently did nothing; fixed here alongside the two new fields.
+      vendorBusyBufferHours,
+      rescheduleResponseTimeoutMinutes,
+      bookingReminderMinutes,
       isInstantBookingEnabled,
       instantBookingMarkup,
       instantBookingWaitTime,
@@ -140,6 +146,9 @@ exports.updateSettings = async (req, res, next) => {
         referralRewardReferrer: referralRewardReferrer !== undefined ? Number(referralRewardReferrer) : 100,
         referralRewardReferee: referralRewardReferee !== undefined ? Number(referralRewardReferee) : 100,
         maxWalletUsagePercentage: maxWalletUsagePercentage !== undefined ? Number(maxWalletUsagePercentage) : 30,
+        vendorBusyBufferHours: vendorBusyBufferHours !== undefined ? Number(vendorBusyBufferHours) : undefined,
+        rescheduleResponseTimeoutMinutes: rescheduleResponseTimeoutMinutes !== undefined ? Number(rescheduleResponseTimeoutMinutes) : undefined,
+        bookingReminderMinutes: bookingReminderMinutes !== undefined ? Number(bookingReminderMinutes) : undefined,
         isInstantBookingEnabled: isInstantBookingEnabled !== undefined ? isInstantBookingEnabled : true,
         instantBookingMarkup: instantBookingMarkup !== undefined ? Number(instantBookingMarkup) : 99,
         instantBookingWaitTime: instantBookingWaitTime !== undefined ? Number(instantBookingWaitTime) : 45,
@@ -225,6 +234,11 @@ exports.updateSettings = async (req, res, next) => {
       if (referralRewardReferrer !== undefined) settings.referralRewardReferrer = Number(referralRewardReferrer);
       if (referralRewardReferee !== undefined) settings.referralRewardReferee = Number(referralRewardReferee);
       if (maxWalletUsagePercentage !== undefined) settings.maxWalletUsagePercentage = Number(maxWalletUsagePercentage);
+      // Previously missing from this update path entirely — the admin UI's "Vendor Job Buffer
+      // Time (Hours)" field looked editable but never actually persisted a change.
+      if (vendorBusyBufferHours !== undefined) settings.vendorBusyBufferHours = Number(vendorBusyBufferHours);
+      if (rescheduleResponseTimeoutMinutes !== undefined) settings.rescheduleResponseTimeoutMinutes = Number(rescheduleResponseTimeoutMinutes);
+      if (bookingReminderMinutes !== undefined) settings.bookingReminderMinutes = Number(bookingReminderMinutes);
       if (isInstantBookingEnabled !== undefined) settings.isInstantBookingEnabled = isInstantBookingEnabled;
       if (instantBookingMarkup !== undefined) settings.instantBookingMarkup = Number(instantBookingMarkup);
       if (instantBookingWaitTime !== undefined) settings.instantBookingWaitTime = Number(instantBookingWaitTime);

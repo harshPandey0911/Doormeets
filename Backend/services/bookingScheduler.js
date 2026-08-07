@@ -14,7 +14,7 @@ const Booking = require('../models/Booking');
 const Vendor = require('../models/Vendor');
 const { BOOKING_STATUS } = require('../utils/constants');
 const { createNotification } = require('../controllers/notificationControllers/notificationController');
-const { calculateTotalAcceptanceFee } = require('../utils/acceptanceFeeHelper');
+const { calculateTotalAcceptanceFee, calculateVariantAcceptanceFee } = require('../utils/acceptanceFeeHelper');
 
 const Settings = require('../models/Settings');
 
@@ -213,44 +213,20 @@ class BookingScheduler {
               if (updateResult.modifiedCount > 0) {
                 console.log(`[BookingScheduler] ${booking.bookingNumber}: Search timed out. Routed to admin.`);
 
-                // Save notification in database for all admins
+                // Notify the Zone Admin(s) responsible for this booking's zone (+ Super Admin
+                // for oversight) — see utils/adminNotifyHelper.js.
                 try {
-                  const User = require('../models/User');
-                  const admins = await User.find({ role: 'ADMIN' });
-                  
-                  const notificationData = {
-                    userId: null,
-                    vendorId: null,
-                    workerId: null,
-                    type: 'admin_booking_requested',
+                  const { notifyBookingAdmins } = require('../utils/adminNotifyHelper');
+                  await notifyBookingAdmins(booking, {
                     title: 'Manual Assignment Needed',
-                    message: `Booking #${booking.bookingNumber} search timed out. Manual assignment needed.`,
-                    priority: 'high',
-                    pushData: {
-                      type: 'admin_booking_requested',
-                      bookingId: booking._id.toString(),
-                      link: `/admin/bookings/${booking._id}`
-                    }
-                  };
-                  
-                  await Promise.all(
-                    admins.map(admin =>
-                      createNotification({ ...notificationData, adminId: admin._id })
-                    )
-                  );
+                    message: `Booking #${booking.bookingNumber} search timed out. Manual assignment needed.`
+                  });
                 } catch (dbNotifErr) {
                   console.error('[BookingScheduler] Failed to save admin timeout notification:', dbNotifErr);
                 }
 
-                // Notify User and Admin
+                // Notify User
                 if (this.io) {
-                  this.io.to('all_admins').emit('admin_booking_requested', {
-                    bookingId: booking._id.toString(),
-                    bookingNumber: booking.bookingNumber,
-                    status: 'pending_admin',
-                    message: `No vendor available for Booking #${booking.bookingNumber}. Manual assignment required.`,
-                    playSound: true
-                  });
                   this.io.to(`user_${booking.userId}`).emit('booking_updated', {
                     bookingId: booking._id,
                     status: 'pending_admin',
@@ -289,32 +265,19 @@ class BookingScheduler {
               );
 
               if (updateResult.modifiedCount > 0) {
-                // Save notification for all admins
+                // Notify the Zone Admin(s) responsible for this booking's zone (+ Super Admin).
                 try {
-                  const User = require('../models/User');
-                  const admins = await User.find({ role: 'ADMIN' });
-                  const notificationData = {
-                    userId: null, vendorId: null, workerId: null,
-                    type: 'admin_booking_requested',
+                  const { notifyBookingAdmins } = require('../utils/adminNotifyHelper');
+                  await notifyBookingAdmins(booking, {
                     title: 'Manual Assignment Needed',
-                    message: `Booking #${booking.bookingNumber} search timed out. Manual assignment needed.`,
-                    priority: 'high',
-                    pushData: { type: 'admin_booking_requested', bookingId: booking._id.toString(), link: `/admin/bookings/${booking._id}` }
-                  };
-                  await Promise.all(admins.map(admin => createNotification({ ...notificationData, adminId: admin._id })));
+                    message: `Booking #${booking.bookingNumber} search timed out. Manual assignment needed.`
+                  });
                 } catch (dbNotifErr) {
                   console.error('[BookingScheduler] Failed to save admin notification:', dbNotifErr);
                 }
 
-                // Socket: notify admin + user
+                // Socket: notify user + free up vendors who were notified
                 if (this.io) {
-                  this.io.to('all_admins').emit('admin_booking_requested', {
-                    bookingId: booking._id.toString(),
-                    bookingNumber: booking.bookingNumber,
-                    status: 'pending_admin',
-                    message: `No vendor available for Booking #${booking.bookingNumber}. Manual assignment required.`,
-                    playSound: true
-                  });
                   this.io.to(`user_${booking.userId}`).emit('booking_updated', {
                     bookingId: booking._id,
                     status: 'pending_admin',
@@ -382,8 +345,20 @@ class BookingScheduler {
           let acceptanceFee = 0;
           try {
             const Service = require('../models/Service');
-            const serviceDoc = await Service.findById(serviceIdStr).select('serviceType packages serviceGroups').lean();
+            const serviceDoc = await Service.findById(serviceIdStr).select('serviceType packages serviceGroups variants').lean();
             acceptanceFee = calculateTotalAcceptanceFee(serviceDoc, populatedBooking.bookedItems);
+
+            // A booking can also bundle several free-form "variant" add-ons picked together
+            // (e.g. "AC Switchboard Installation" + "1 Switch") instead of fixed packages —
+            // each has its own vendorAcceptanceFee on a per-variant PricingConfig row, so it
+            // must be summed too rather than falling through to a single arbitrary record below.
+            if (acceptanceFee === 0) {
+              acceptanceFee = calculateVariantAcceptanceFee(serviceDoc, populatedBooking.dynamicFields, pricings, {
+                zoneId: populatedBooking.zoneId,
+                cityId: populatedBooking.cityId,
+                brandId: populatedBooking.brandId
+              });
+            }
           } catch (err) {
             console.error('[BookingScheduler] Error checking sub-package acceptance fee:', err);
           }
@@ -477,8 +452,7 @@ class BookingScheduler {
       const Category = require('../models/Category');
       const BookingRequest = require('../models/BookingRequest');
       const { findNearbyVendors } = require('./locationService');
-      const { createNotification } = require('../controllers/notificationControllers/notificationController');
-      
+
       const booking = await Booking.findById(bookingId)
         .populate('userId')
         .populate('serviceId');
@@ -592,43 +566,19 @@ class BookingScheduler {
         booking.cancellationReason = 'No vendor accepted within time limit. Awaiting admin review.';
         await booking.save();
 
-        // Save notification in database for all admins
+        // Notify the Zone Admin(s) responsible for this booking's zone (+ Super Admin).
         try {
-          const User = require('../models/User');
-          const admins = await User.find({ role: 'ADMIN' });
-          
-          const notificationData = {
-            userId: null,
-            vendorId: null,
-            workerId: null,
-            type: 'admin_booking_requested',
+          const { notifyBookingAdmins } = require('../utils/adminNotifyHelper');
+          await notifyBookingAdmins(booking, {
             title: 'Manual Assignment Needed',
-            message: `Booking #${booking.bookingNumber} has no available vendors. Manual assignment needed.`,
-            priority: 'high',
-            pushData: {
-              type: 'admin_booking_requested',
-              bookingId: booking._id.toString(),
-              link: `/admin/bookings/${booking._id}`
-            }
-          };
-          
-          await Promise.all(
-            admins.map(admin =>
-              createNotification({ ...notificationData, adminId: admin._id })
-            )
-          );
+            message: `Booking #${booking.bookingNumber} has no available vendors. Manual assignment needed.`
+          });
         } catch (dbNotifErr) {
           console.error('[broadcastBookingSearch] Failed to save admin notification:', dbNotifErr);
         }
 
-        // Emit socket notification to admins
+        // Emit socket notification to user
         if (this.io) {
-          this.io.to('all_admins').emit('admin_booking_requested', {
-            bookingId: booking._id.toString(),
-            bookingNumber: booking.bookingNumber,
-            status: 'pending_admin',
-            message: 'Booking request sent to admin for manual assignment.'
-          });
           this.io.to(`user_${booking.userId?._id || booking.userId}`).emit('booking_updated', {
             bookingId: booking._id.toString(),
             status: 'pending_admin',
