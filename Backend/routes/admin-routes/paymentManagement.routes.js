@@ -8,7 +8,8 @@ const {
   getTDSReport,
   getCODReport,
   getPaymentTransactions,
-  getRevenueBreakdown
+  getRevenueBreakdown,
+  getMonthlyPromoReport
 } = require('../../controllers/adminControllers/reportController');
 
 // All routes require authentication and admin role
@@ -23,5 +24,6 @@ router.get('/payments/reports/gst', getGSTRReport);
 router.get('/payments/reports/tds', getTDSReport);
 router.get('/payments/reports/cod', getCODReport);
 router.get('/payments/reports/revenue-breakdown', getRevenueBreakdown);
+router.get('/payments/reports/monthly-promo', getMonthlyPromoReport);
 
 module.exports = router;

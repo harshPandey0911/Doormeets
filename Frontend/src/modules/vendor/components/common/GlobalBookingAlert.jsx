@@ -19,17 +19,23 @@ export default function GlobalBookingAlert() {
   const [maxSearchTime, setMaxSearchTime] = useState(1);
 
   useEffect(() => {
-    // 1. Logic to sync with localStorage and optionally Server
-    const syncAlerts = async (forceServerSync = false) => {
+    // 1. Logic to sync with localStorage and Server (always polls now — see note below)
+    const syncAlerts = async () => {
       try {
         const now = Date.now();
         let pendingJobs = JSON.parse(localStorage.getItem('vendorPendingJobs') || '[]');
 
-        // Every few heartbeats or if forced, sync with Server API for missed sockets
+        // Sync with Server API on every heartbeat to catch any booking the socket missed (page
+        // just loaded, brief reconnect, backgrounded tab, etc). This used to only poll ~20% of
+        // ticks (Math.random() > 0.8), so within one 60s booking wave there was roughly a 1-in-4
+        // chance NONE of the polls fired at all — a missed socket event could go completely
+        // undetected until the wave moved on, which is exactly the "pop-up sometimes doesn't
+        // show up" glitch. Polling every 5s (see heartbeat interval below) is cheap enough to run
+        // unconditionally and guarantees detection well within the wave window.
         const token = localStorage.getItem('vendorAccessToken') || sessionStorage.getItem('vendorAccessToken');
         const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
         const isApproved = vendorData.approvalStatus?.toLowerCase() === 'approved';
-        if (token && isApproved && (forceServerSync || (Math.random() > 0.8))) {
+        if (token && isApproved) {
           try {
             const { getBookings } = await import('../../services/bookingService');
             const response = await getBookings();
@@ -81,7 +87,7 @@ export default function GlobalBookingAlert() {
     // 2. Foreground Sync: Sync immediately when vendor resumes app
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        syncAlerts(true);
+        syncAlerts();
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -112,15 +118,16 @@ export default function GlobalBookingAlert() {
       }
     };
 
-    syncAlerts(true);
+    syncAlerts();
     fetchConfig();
 
-    // 3. Heartbeat: Periodic sync (with tab visibility check to save network and CPU)
+    // 3. Heartbeat: Periodic sync (with tab visibility check to save network and CPU). 5s keeps
+    // the worst-case detection latency for a missed socket event well inside the 60s wave window.
     const heartbeat = setInterval(() => {
       if (document.visibilityState === 'visible') {
-        syncAlerts(false);
+        syncAlerts();
       }
-    }, 10000);
+    }, 5000);
 
     // Listen for custom dashboard events from SocketContext
     const handleShowAlert = (e) => {

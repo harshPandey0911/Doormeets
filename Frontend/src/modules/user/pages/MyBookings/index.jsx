@@ -34,8 +34,18 @@ const getBookingDummyImage = (title) => {
 };
 
 const getBookingImage = (booking) => {
+  // `serviceImage` was never a real field the API returns — the booking list actually populates
+  // `serviceId.iconUrl` (see getUserBookings' `.populate('serviceId', 'title iconUrl')`). Every
+  // card fell through to the generic keyword-matched dummy photo because this checked a field
+  // that's always undefined, which is why every Electrician booking showed the same stock image.
+  if (booking.serviceId?.iconUrl) {
+    return toAssetUrl(booking.serviceId.iconUrl);
+  }
   if (booking.serviceImage) {
     return toAssetUrl(booking.serviceImage);
+  }
+  if (booking.categoryIcon) {
+    return toAssetUrl(booking.categoryIcon);
   }
   if (booking.bookedItems && booking.bookedItems.length > 0) {
     const firstItem = booking.bookedItems[0];

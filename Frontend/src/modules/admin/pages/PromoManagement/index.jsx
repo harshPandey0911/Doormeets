@@ -1,14 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiPercent, FiX, FiTag } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiPercent, FiX, FiTag, FiBarChart2, FiClock, FiExternalLink } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import api from '../../../../services/api';
 import { toast } from 'react-hot-toast';
 
 const PromoManagement = () => {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('list'); // 'list' | 'analytics' | 'history'
   const [promos, setPromos] = useState([]);
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPages, setHistoryPages] = useState(1);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPromo, setCurrentPromo] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -31,6 +42,42 @@ const PromoManagement = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'analytics' && !analytics) {
+      fetchAnalytics();
+    } else if (activeTab === 'history') {
+      fetchHistory(historyPage);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, historyPage]);
+
+  const fetchAnalytics = async () => {
+    setAnalyticsLoading(true);
+    try {
+      const res = await api.get('/admin/promos/analytics');
+      setAnalytics(res.data.data);
+    } catch (error) {
+      console.error('Error fetching promo analytics:', error);
+      toast.error('Failed to load promo analytics');
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  const fetchHistory = async (page = 1) => {
+    setHistoryLoading(true);
+    try {
+      const res = await api.get('/admin/promos/usage-history', { params: { page, limit: 20 } });
+      setHistory(res.data.data || []);
+      setHistoryPages(res.data.pagination?.pages || 1);
+    } catch (error) {
+      console.error('Error fetching promo usage history:', error);
+      toast.error('Failed to load promo usage history');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   // Dynamically enforce discount caps in real-time
   useEffect(() => {
@@ -183,15 +230,34 @@ const PromoManagement = () => {
           </h2>
           <p className="text-sm text-gray-500">Create and manage discounts for your services</p>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors text-sm font-semibold"
-        >
-          <FiPlus /> Create Promo Code
-        </button>
+        {activeTab === 'list' && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors text-sm font-semibold"
+          >
+            <FiPlus /> Create Promo Code
+          </button>
+        )}
       </div>
 
-      {loading ? (
+      {/* Tab Switcher */}
+      <div className="flex gap-1 bg-gray-50 p-1 rounded-lg border border-gray-100 w-fit">
+        {[
+          { key: 'list', label: 'Promo Codes', icon: FiTag },
+          { key: 'analytics', label: 'Analytics', icon: FiBarChart2 },
+          { key: 'history', label: 'Usage History', icon: FiClock }
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-3.5 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 transition-colors ${activeTab === tab.key ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            <tab.icon className="w-3.5 h-3.5" /> {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'list' && (loading ? (
         <div className="text-center py-10 text-gray-500 text-sm">Loading promo codes...</div>
       ) : (
         <div className="overflow-x-auto">
@@ -274,6 +340,140 @@ const PromoManagement = () => {
               )}
             </tbody>
           </table>
+        </div>
+      ))}
+
+      {/* Analytics Tab */}
+      {activeTab === 'analytics' && (
+        analyticsLoading ? (
+          <div className="text-center py-10 text-gray-500 text-sm">Loading analytics...</div>
+        ) : !analytics ? (
+          <div className="text-center py-10 text-gray-500 text-sm">No data available.</div>
+        ) : (
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: 'Total Promo Codes', value: analytics.totalPromoCodes, color: 'text-gray-800' },
+                { label: 'Active', value: analytics.activePromoCodes, color: 'text-green-600' },
+                { label: 'Expired', value: analytics.expiredPromoCodes, color: 'text-red-500' },
+                { label: 'Total Usage', value: analytics.totalUsage, color: 'text-blue-600' },
+                { label: 'Total Discount Given', value: `₹${analytics.totalDiscountGiven}`, color: 'text-red-500' },
+                { label: 'Total Revenue Generated', value: `₹${analytics.totalRevenueGenerated}`, color: 'text-green-700' },
+                { label: 'Average Discount', value: `₹${analytics.averageDiscount}`, color: 'text-gray-800' },
+                {
+                  label: 'Last Used',
+                  value: analytics.lastUsedDate ? new Date(analytics.lastUsedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—',
+                  color: 'text-gray-800'
+                }
+              ].map(stat => (
+                <div key={stat.label} className="bg-gray-50 border border-gray-100 rounded-xl p-4">
+                  <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wide">{stat.label}</p>
+                  <p className={`text-lg font-black mt-1 ${stat.color}`}>{stat.value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                <p className="text-[10px] uppercase font-bold text-blue-400 tracking-wide">Most Used Promo</p>
+                {analytics.mostUsedPromo ? (
+                  <p className="text-sm font-bold text-blue-800 mt-1">{analytics.mostUsedPromo.code} — {analytics.mostUsedPromo.usage} uses</p>
+                ) : (
+                  <p className="text-sm text-blue-400 mt-1">No usage yet</p>
+                )}
+              </div>
+              <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
+                <p className="text-[10px] uppercase font-bold text-purple-400 tracking-wide">Highest Discount Promo</p>
+                {analytics.highestDiscountPromo ? (
+                  <p className="text-sm font-bold text-purple-800 mt-1">{analytics.highestDiscountPromo.code} — ₹{analytics.highestDiscountPromo.discountGiven} given</p>
+                ) : (
+                  <p className="text-sm text-purple-400 mt-1">No usage yet</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      )}
+
+      {/* Usage History Tab */}
+      {activeTab === 'history' && (
+        <div className="overflow-x-auto">
+          {historyLoading ? (
+            <div className="text-center py-10 text-gray-500 text-sm">Loading usage history...</div>
+          ) : (
+            <>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="p-3 font-semibold text-gray-600 text-xs">Booking</th>
+                    <th className="p-3 font-semibold text-gray-600 text-xs">Customer</th>
+                    <th className="p-3 font-semibold text-gray-600 text-xs">Vendor</th>
+                    <th className="p-3 font-semibold text-gray-600 text-xs">Service</th>
+                    <th className="p-3 font-semibold text-gray-600 text-xs">Promo</th>
+                    <th className="p-3 font-semibold text-gray-600 text-xs">Discount</th>
+                    <th className="p-3 font-semibold text-gray-600 text-xs">Original</th>
+                    <th className="p-3 font-semibold text-gray-600 text-xs">Paid</th>
+                    <th className="p-3 font-semibold text-gray-600 text-xs">Date</th>
+                    <th className="p-3 font-semibold text-gray-600 text-xs">Status</th>
+                    <th className="p-3 font-semibold text-gray-600 text-xs text-right">Booking</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map(h => (
+                    <tr key={h.bookingId} className="border-b border-gray-50 hover:bg-gray-50 transition-colors text-xs">
+                      <td className="p-3 font-mono text-gray-600">{h.bookingNumber}</td>
+                      <td className="p-3 text-gray-700">{h.customer}</td>
+                      <td className="p-3 text-gray-700">{h.vendor}</td>
+                      <td className="p-3 text-gray-700">{h.service}</td>
+                      <td className="p-3">
+                        <span className="font-mono font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px]">{h.promoCode}</span>
+                      </td>
+                      <td className="p-3 text-red-500 font-semibold">-₹{h.discountAmount}</td>
+                      <td className="p-3 text-gray-500">₹{h.originalAmount}</td>
+                      <td className="p-3 text-green-700 font-semibold">₹{h.finalPaidAmount}</td>
+                      <td className="p-3 text-gray-500">{new Date(h.bookingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                      <td className="p-3">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700 capitalize">{h.bookingStatus}</span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <button
+                          onClick={() => navigate(`/admin/bookings/${h.bookingId}`)}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded inline-flex"
+                          title="View booking"
+                        >
+                          <FiExternalLink className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {history.length === 0 && (
+                    <tr>
+                      <td colSpan="11" className="p-8 text-center text-gray-500 text-sm">No promo redemptions yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              {historyPages > 1 && (
+                <div className="flex justify-center items-center gap-3 mt-4">
+                  <button
+                    disabled={historyPage <= 1}
+                    onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-xs text-gray-500">Page {historyPage} of {historyPages}</span>
+                  <button
+                    disabled={historyPage >= historyPages}
+                    onClick={() => setHistoryPage(p => Math.min(historyPages, p + 1))}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 

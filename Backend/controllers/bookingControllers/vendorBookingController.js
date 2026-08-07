@@ -2806,6 +2806,13 @@ const getPendingBookings = async (req, res) => {
         bookingId: r.bookingId._id,
         bookingNumber: r.bookingId.bookingNumber,
         serviceName: r.bookingId.serviceId?.title || r.bookingId.serviceName,
+        // Was previously dropped entirely — the frontend card falls back to a generic bell icon
+        // whenever categoryIcon is empty because it has no per-service image to fall back to.
+        serviceId: r.bookingId.serviceId ? {
+          _id: r.bookingId.serviceId._id,
+          title: r.bookingId.serviceId.title,
+          iconUrl: r.bookingId.serviceId.iconUrl
+        } : null,
         customerName: r.bookingId.userId?.name,
         scheduledDate: r.bookingId.scheduledDate,
         scheduledTime: r.bookingId.scheduledTime,

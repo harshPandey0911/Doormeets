@@ -128,10 +128,15 @@ exports.updateSettings = async (req, res, next) => {
         companyWebsite,
         isOnlinePaymentEnabled: isOnlinePaymentEnabled !== undefined ? isOnlinePaymentEnabled : true,
         commissionPercentage: commissionPercentage !== undefined ? Number(commissionPercentage) : 10,
-        loyaltyPointsEarningRate: loyaltyPointsEarningRate !== undefined ? Number(loyaltyPointsEarningRate) : 1,
-        loyaltyPointsRedemptionRate: loyaltyPointsRedemptionRate !== undefined ? Number(loyaltyPointsRedemptionRate) : 1,
-        loyaltyPointsCancellationPenalty: loyaltyPointsCancellationPenalty !== undefined ? Number(loyaltyPointsCancellationPenalty) : 10,
-        loyaltyPointsFixedCompletionAward: loyaltyPointsFixedCompletionAward !== undefined ? Number(loyaltyPointsFixedCompletionAward) : 50,
+        // No hardcoded fallback numbers here — when a field isn't provided, leave it undefined
+        // and let the Settings schema's own default apply (the single place these defaults
+        // should be declared). Previously this hardcoded 10/50 for the penalty/fixed-award
+        // fields while the schema itself defaults to 0/0 — three different defaults for the
+        // same two fields across schema/here/the admin config page.
+        loyaltyPointsEarningRate: loyaltyPointsEarningRate !== undefined ? Number(loyaltyPointsEarningRate) : undefined,
+        loyaltyPointsRedemptionRate: loyaltyPointsRedemptionRate !== undefined ? Number(loyaltyPointsRedemptionRate) : undefined,
+        loyaltyPointsCancellationPenalty: loyaltyPointsCancellationPenalty !== undefined ? Number(loyaltyPointsCancellationPenalty) : undefined,
+        loyaltyPointsFixedCompletionAward: loyaltyPointsFixedCompletionAward !== undefined ? Number(loyaltyPointsFixedCompletionAward) : undefined,
         referralRewardReferrer: referralRewardReferrer !== undefined ? Number(referralRewardReferrer) : 100,
         referralRewardReferee: referralRewardReferee !== undefined ? Number(referralRewardReferee) : 100,
         maxWalletUsagePercentage: maxWalletUsagePercentage !== undefined ? Number(maxWalletUsagePercentage) : 30,
@@ -320,5 +325,66 @@ exports.getPublicSettings = async (req, res, next) => {
       success: false,
       message: 'Failed to fetch settings'
     });
+  }
+};
+
+// Loyalty Points Analytics (Admin Only) — computed fresh from the Transaction ledger + live
+// User balances on every request, so it always reflects the latest transactions with no caching
+// to go stale. Earning now creates a 'credit' Transaction (models/Booking.js post-save hook) the
+// same way redeem/refund/penalty already did, so this ledger sees every loyalty event.
+exports.getLoyaltyAnalytics = async (req, res) => {
+  try {
+    const Transaction = require('../../models/Transaction');
+    const User = require('../../models/User');
+
+    const byType = await Transaction.aggregate([
+      { $match: { 'metadata.type': 'loyalty_points' } },
+      {
+        $group: {
+          _id: '$type',
+          totalPoints: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const totals = { credit: 0, debit: 0, refund: 0, penalty: 0 };
+    const counts = { credit: 0, debit: 0, refund: 0, penalty: 0 };
+    byType.forEach(t => {
+      if (totals[t._id] !== undefined) {
+        totals[t._id] = t.totalPoints;
+        counts[t._id] = t.count;
+      }
+    });
+
+    const [balanceAgg] = await User.aggregate([
+      { $group: { _id: null, totalOutstandingBalance: { $sum: '$loyaltyPoints' } } }
+    ]);
+
+    // Sum the actual ₹ amount snapshotted on each booking at redemption time (loyaltyDiscountAmount)
+    // rather than re-deriving it from the current rate — a rate change since redemption would make
+    // that wrong for historical bookings, exactly the thing this whole feature is meant to avoid.
+    const Booking = require('../../models/Booking');
+    const [redemptionValueAgg] = await Booking.aggregate([
+      { $match: { loyaltyDiscountAmount: { $gt: 0 } } },
+      { $group: { _id: null, total: { $sum: '$loyaltyDiscountAmount' } } }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalPointsIssued: totals.credit,
+        totalEarnTransactions: counts.credit,
+        totalPointsRedeemed: totals.debit,
+        totalRedeemTransactions: counts.debit,
+        totalRedemptionValueGiven: parseFloat((redemptionValueAgg?.total || 0).toFixed(2)),
+        totalPointsRefunded: totals.refund,
+        totalPenaltyPointsDeducted: totals.penalty,
+        totalOutstandingBalance: balanceAgg?.totalOutstandingBalance || 0
+      }
+    });
+  } catch (error) {
+    console.error('Error computing loyalty analytics:', error);
+    res.status(500).json({ success: false, message: 'Failed to compute loyalty analytics' });
   }
 };

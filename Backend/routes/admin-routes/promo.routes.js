@@ -6,11 +6,17 @@ const {
   createPromo,
   getAllPromos,
   updatePromo,
-  deletePromo
+  deletePromo,
+  getPromoAnalytics,
+  getPromoUsageHistory
 } = require('../../controllers/adminControllers/promoController');
 
 // All routes require authentication, admin role and promo management permission
 router.use(authenticate, isAdmin, hasPermission('manage_promos'));
+
+// Fixed paths before /:id so they're never swallowed by a param route.
+router.get('/analytics', getPromoAnalytics);
+router.get('/usage-history', getPromoUsageHistory);
 
 router.post('/', createPromo);
 router.get('/', getAllPromos);

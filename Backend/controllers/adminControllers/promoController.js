@@ -1,7 +1,7 @@
 const PromoCode = require('../../models/PromoCode');
-const Service = require('../../models/Service');
-const Category = require('../../models/Category');
+const Booking = require('../../models/Booking');
 const { getZoneMatchFilter } = require('../../utils/adminFilterHelper');
+const { validateAndCalculatePromo, PromoValidationError } = require('../../utils/promoValidator');
 
 // Create Promo Code (Admin Only)
 exports.createPromo = async (req, res) => {
@@ -87,11 +87,17 @@ exports.updatePromo = async (req, res) => {
     }
 
     const updateFields = {
-      isActive: isActive !== undefined ? isActive : promo.isActive,
-      appliesTo: appliesTo !== undefined ? appliesTo : promo.appliesTo,
-      serviceId: appliesTo === 'service' ? serviceId : null,
-      categoryId: appliesTo === 'category' ? categoryId : null
+      isActive: isActive !== undefined ? isActive : promo.isActive
     };
+
+    // Only touch appliesTo/serviceId/categoryId when appliesTo is actually part of THIS update —
+    // previously this unconditionally reset serviceId/categoryId to null on every save (even a
+    // plain isActive toggle), silently wiping out a promo's service/category scope.
+    if (appliesTo !== undefined) {
+      updateFields.appliesTo = appliesTo;
+      updateFields.serviceId = appliesTo === 'service' ? serviceId : null;
+      updateFields.categoryId = appliesTo === 'category' ? categoryId : null;
+    }
 
     if (code) {
       const uppercaseCode = code.trim().toUpperCase();
@@ -141,77 +147,14 @@ exports.deletePromo = async (req, res) => {
   }
 };
 
-// Apply/Verify Promo Code (User checkout)
+// Apply/Verify Promo Code (User checkout — preview only, never persists anything).
+// Uses the exact same validation/calculation as createBooking's real, server-side re-check
+// (utils/promoValidator.js), so this preview can never drift out of sync with what actually
+// gets charged when the booking is placed.
 exports.applyPromo = async (req, res) => {
   try {
     const { code, serviceId, basePrice, quantity } = req.body;
-
-    if (!code) {
-      return res.status(400).json({ success: false, message: 'Promo code is required.' });
-    }
-
-    const promo = await PromoCode.findOne({ code: code.trim().toUpperCase(), isActive: true });
-    if (!promo) {
-      return res.status(404).json({ success: false, message: 'Invalid or inactive promo code.' });
-    }
-
-    // Check Expiry Date (valid until 11:59:59.999 PM of the expiry date)
-    const promoExp = new Date(promo.expiryDate);
-    promoExp.setHours(23, 59, 59, 999);
-    if (promoExp < new Date()) {
-      return res.status(400).json({ success: false, message: 'This promo code has expired.' });
-    }
-
-    // Check Usage Limit
-    if (promo.usageLimit !== null && promo.usageCount >= promo.usageLimit) {
-      return res.status(400).json({ success: false, message: 'Usage limit for this promo code has been reached.' });
-    }
-
-    // Check Minimum Order Value
-    if (basePrice < promo.minOrderValue) {
-      return res.status(400).json({ success: false, message: `Minimum order value of ₹${promo.minOrderValue} is required to apply this code.` });
-    }
-
-    // Check specific service/category restrictions
-    if (promo.appliesTo === 'service') {
-      if (!serviceId || String(serviceId) !== String(promo.serviceId)) {
-        return res.status(400).json({ success: false, message: 'This promo code is not applicable to the selected service.' });
-      }
-    } else if (promo.appliesTo === 'category') {
-      // Resolve category of the service first
-      const service = await Service.findById(serviceId);
-      if (!service || String(service.categoryId) !== String(promo.categoryId)) {
-        return res.status(400).json({ success: false, message: 'This promo code is not applicable to services in this category.' });
-      }
-    }
-
-    // Calculate Eligible Price & Quantity for Discount
-    const itemQty = Number(quantity || 1);
-    const eligibleQty = promo.maxDiscountQty ? Math.min(itemQty, Number(promo.maxDiscountQty)) : itemQty;
-    const unitPrice = Number(basePrice) / itemQty;
-    const eligiblePrice = unitPrice * eligibleQty;
-
-    // Calculate Discount Amount
-    let discountAmount = 0;
-    if (promo.discountType === 'flat') {
-      // Flat discount applies per eligible item
-      discountAmount = promo.discountValue * eligibleQty;
-    } else {
-      discountAmount = (eligiblePrice * promo.discountValue) / 100;
-      if (promo.maxDiscountAmount !== null && discountAmount > promo.maxDiscountAmount) {
-        discountAmount = promo.maxDiscountAmount;
-      }
-    }
-
-    // Guard against discount exceeding eligible price
-    if (discountAmount > eligiblePrice) {
-      discountAmount = eligiblePrice;
-    }
-
-    // Guard against discount exceeding overall basePrice
-    if (discountAmount > basePrice) {
-      discountAmount = basePrice;
-    }
+    const { discountAmount, promo } = await validateAndCalculatePromo({ code, basePrice, serviceId, quantity });
 
     res.status(200).json({
       success: true,
@@ -220,11 +163,14 @@ exports.applyPromo = async (req, res) => {
         code: promo.code,
         discountType: promo.discountType,
         discountValue: promo.discountValue,
-        discountAmount: Number(discountAmount.toFixed(2)),
-        finalPrice: Number((basePrice - discountAmount).toFixed(2))
+        discountAmount,
+        finalPrice: Number((Number(basePrice) - discountAmount).toFixed(2))
       }
     });
   } catch (error) {
+    if (error instanceof PromoValidationError) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
     console.error('Apply promo error:', error);
     res.status(500).json({ success: false, message: 'Server error while validating promo code' });
   }
@@ -246,5 +192,126 @@ exports.getActivePublicPromos = async (req, res) => {
   } catch (error) {
     console.error('Get public active promos error:', error);
     res.status(500).json({ success: false, message: 'Server error while fetching active promo codes' });
+  }
+};
+
+// Promo Analytics (Admin Only)
+// Total/active/expired counts + usage-based stats (usage, discount given, revenue generated,
+// most-used, highest-discount, average discount, last-used) computed straight from Booking
+// records — no separate ledger to keep in sync, Booking.promoApplied/promoCodeId IS the ledger.
+exports.getPromoAnalytics = async (req, res) => {
+  try {
+    const now = new Date();
+
+    const [totalPromoCodes, activePromoCodes, expiredPromoCodes] = await Promise.all([
+      PromoCode.countDocuments({}),
+      PromoCode.countDocuments({ isActive: true, expiryDate: { $gte: now } }),
+      PromoCode.countDocuments({ expiryDate: { $lt: now } })
+    ]);
+
+    const usageStats = await Booking.aggregate([
+      { $match: { promoApplied: true, promoCodeId: { $ne: null } } },
+      {
+        $group: {
+          _id: '$promoCodeId',
+          code: { $first: '$promoCode' },
+          totalUsage: { $sum: 1 },
+          totalDiscountGiven: { $sum: '$promoDiscountAmount' },
+          totalRevenueGenerated: { $sum: '$finalAmount' },
+          lastUsedDate: { $max: '$createdAt' }
+        }
+      }
+    ]);
+
+    const totalUsage = usageStats.reduce((sum, s) => sum + s.totalUsage, 0);
+    const totalDiscountGiven = parseFloat(usageStats.reduce((sum, s) => sum + s.totalDiscountGiven, 0).toFixed(2));
+    const totalRevenueGenerated = parseFloat(usageStats.reduce((sum, s) => sum + s.totalRevenueGenerated, 0).toFixed(2));
+    const averageDiscount = totalUsage > 0 ? parseFloat((totalDiscountGiven / totalUsage).toFixed(2)) : 0;
+    const lastUsedDate = usageStats.reduce((latest, s) => (!latest || s.lastUsedDate > latest ? s.lastUsedDate : latest), null);
+
+    const mostUsedPromo = usageStats.length > 0
+      ? usageStats.reduce((max, s) => (s.totalUsage > max.totalUsage ? s : max))
+      : null;
+    const highestDiscountPromo = usageStats.length > 0
+      ? usageStats.reduce((max, s) => (s.totalDiscountGiven > max.totalDiscountGiven ? s : max))
+      : null;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalPromoCodes,
+        activePromoCodes,
+        expiredPromoCodes,
+        totalUsage,
+        totalDiscountGiven,
+        totalRevenueGenerated,
+        averageDiscount,
+        lastUsedDate,
+        mostUsedPromo: mostUsedPromo ? { code: mostUsedPromo.code, usage: mostUsedPromo.totalUsage } : null,
+        highestDiscountPromo: highestDiscountPromo ? { code: highestDiscountPromo.code, discountGiven: parseFloat(highestDiscountPromo.totalDiscountGiven.toFixed(2)) } : null
+      }
+    });
+  } catch (error) {
+    console.error('Get promo analytics error:', error);
+    res.status(500).json({ success: false, message: 'Server error while computing promo analytics' });
+  }
+};
+
+// Promo Usage History (Admin Only) — every booking a promo was actually redeemed on.
+exports.getPromoUsageHistory = async (req, res) => {
+  try {
+    const { code, startDate, endDate, page = 1, limit = 20 } = req.query;
+
+    const query = { promoApplied: true };
+    if (code) query.promoCode = String(code).trim().toUpperCase();
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [bookings, total] = await Promise.all([
+      Booking.find(query)
+        .select('bookingNumber userId vendorId serviceId serviceName promoCode promoDiscountAmount originalAmount finalAmount createdAt paymentStatus status')
+        .populate('userId', 'name phone')
+        .populate('vendorId', 'name businessName')
+        .populate('serviceId', 'title')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      Booking.countDocuments(query)
+    ]);
+
+    const data = bookings.map(b => ({
+      bookingId: b._id,
+      bookingNumber: b.bookingNumber,
+      customer: b.userId?.name || 'N/A',
+      vendor: b.vendorId?.name || b.vendorId?.businessName || 'Unassigned',
+      service: b.serviceId?.title || b.serviceName || 'N/A',
+      promoCode: b.promoCode,
+      discountAmount: b.promoDiscountAmount,
+      originalAmount: b.originalAmount,
+      finalPaidAmount: b.finalAmount,
+      bookingDate: b.createdAt,
+      paymentStatus: b.paymentStatus,
+      bookingStatus: b.status
+    }));
+
+    res.status(200).json({
+      success: true,
+      data,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Get promo usage history error:', error);
+    res.status(500).json({ success: false, message: 'Server error while fetching promo usage history' });
   }
 };

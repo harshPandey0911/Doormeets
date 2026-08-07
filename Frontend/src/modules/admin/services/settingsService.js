@@ -18,6 +18,15 @@ export const updateSettings = async (settingsData) => {
   }
 };
 
+export const getLoyaltyAnalytics = async () => {
+  try {
+    const response = await api.get('/admin/loyalty/analytics');
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const updateAdminProfile = async (profileData) => {
   try {
     const response = await api.put('/admin/auth/profile', profileData);

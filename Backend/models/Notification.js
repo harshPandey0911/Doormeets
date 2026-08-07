@@ -82,6 +82,7 @@ const notificationSchema = new mongoose.Schema({
       'painting_inspection_started',  // User notified: inspection began
       'painting_inspection_complete', // User notified: inspection done, quote incoming
       'painting_slot_confirmed',      // User notified: scheduled slot confirmed by vendor
+      'loyalty_points_earned',        // User notified: earned loyalty points on a completed booking
       'general',
       'admin_broadcast'               // Admin manually sent broadcast/targeted notification
     ],

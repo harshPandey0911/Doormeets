@@ -128,7 +128,10 @@ const Checkout = () => {
         );
 
         if (response.success) {
-          setAppliedPromo(response.data);
+          // `source: 'promo'` is what tells submit which field to send this code in — a real
+          // promo code's discount is now always recomputed and enforced server-side, never
+          // trusted from this client-side number (see promoCode handling on submit below).
+          setAppliedPromo({ ...response.data, source: 'promo' });
           toast.success(response.message || 'Promo code applied!');
           setPromoLoading(false);
           return;
@@ -155,12 +158,15 @@ const Checkout = () => {
           setPromoCode('');
           setPromoError('');
         } else {
-          // Discount voucher applied!
+          // Discount voucher applied! Tagged 'voucher' (not 'promo') so submit keeps sending its
+          // discount the existing way (merged into `discount`) — vouchers are a separate system
+          // from promo codes and this redesign doesn't change how they're charged.
           setAppliedPromo({
             code: response.data.code,
             discountType: response.data.discountType,
             discountValue: response.data.discountValue,
-            discountAmount: response.data.discountAmount
+            discountAmount: response.data.discountAmount,
+            source: 'voucher'
           });
           toast.success(response.message || 'Gift voucher applied!');
         }
@@ -595,10 +601,15 @@ const Checkout = () => {
 
         // Pass Full Breakdown to Backend
         basePrice: totalOriginalPrice,
-        discount: savings + promoDiscount,
+        // A real promo code's discount is recomputed and enforced server-side (see promoCode
+        // below) — it must NOT be folded into this generic `discount` number, or the server has
+        // no way to tell it apart from the promo it's about to independently apply. A gift
+        // voucher's discount still goes through this field exactly as before.
+        discount: savings + (appliedPromo?.source === 'voucher' ? promoDiscount : 0),
         tax: taxesAndFee,
         visitationFee: finalVisitedFee,
-        promoCode: appliedPromo ? appliedPromo.code : null,
+        promoCode: appliedPromo?.source === 'promo' ? appliedPromo.code : null,
+        voucherCode: appliedPromo?.source === 'voucher' ? appliedPromo.code : null,
 
         // Metadata for better data capture
         serviceCategory: firstItem.categoryTitle || firstItem.category || 'General',
@@ -925,10 +936,15 @@ const Checkout = () => {
 
         // Pass Full Breakdown to Backend
         basePrice: totalOriginalPrice,
-        discount: savings + promoDiscount,
+        // A real promo code's discount is recomputed and enforced server-side (see promoCode
+        // below) — it must NOT be folded into this generic `discount` number, or the server has
+        // no way to tell it apart from the promo it's about to independently apply. A gift
+        // voucher's discount still goes through this field exactly as before.
+        discount: savings + (appliedPromo?.source === 'voucher' ? promoDiscount : 0),
         tax: taxesAndFee,
         visitationFee: finalVisitedFee,
-        promoCode: appliedPromo ? appliedPromo.code : null,
+        promoCode: appliedPromo?.source === 'promo' ? appliedPromo.code : null,
+        voucherCode: appliedPromo?.source === 'voucher' ? appliedPromo.code : null,
 
         // Metadata for better data capture
         serviceCategory: firstItem.categoryTitle || firstItem.category || 'General',

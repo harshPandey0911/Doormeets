@@ -191,6 +191,52 @@ const bookingSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+
+  // ==========================================
+  // 3b. PROMO CODE (kept fully separate from the generic `discount` field above — a promo
+  // discount must never mix with plan-benefit/service-markdown discounts, so it can be tracked,
+  // audited, and — critically — excluded from vendor payout / GST math independently of them.)
+  // ==========================================
+  promoCodeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'PromoCode',
+    default: null
+  },
+  promoCode: {
+    type: String,
+    default: null
+  },
+  promoDiscountAmount: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  promoApplied: {
+    type: Boolean,
+    default: false
+  },
+  // What the customer would have paid with the promo removed but every other existing
+  // discount kept as-is (= finalAmount + promoDiscountAmount). Equals finalAmount whenever no
+  // promo was applied, so it's a safe, backward-compatible field for old bookings too.
+  originalAmount: {
+    type: Number,
+    default: 0
+  },
+  // Completion-time snapshot of adminMarginNet, kept as its own field solely so promo-aware
+  // surfaces (Analytics/Reports/Admin Booking Details) have one unambiguous name to show as
+  // "Platform Commission" without touching what adminMarginNet means anywhere else in the app.
+  platformCommission: {
+    type: Number,
+    default: 0
+  },
+  // The platform's true bottom-line profit on this booking: platformCommission minus whatever
+  // promo discount was given away. Promo Discount = Platform Marketing Expense — this is the
+  // ONLY figure it ever reduces. Never vendor earnings, never GST.
+  platformProfit: {
+    type: Number,
+    default: 0
+  },
+
   // Reference to VendorBill (single source of truth for earnings/commission)
   vendorBillId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -531,9 +577,33 @@ const bookingSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // The ₹ amount that loyaltyPointsRedeemed actually discounted off finalAmount — the point
+  // count alone isn't enough to reconstruct this later if the redemption rate changes, and
+  // commissionService.js needs this rupee figure to keep vendor payout/GST safe from loyalty
+  // discounts the same way it's already kept safe from promo discounts.
+  loyaltyDiscountAmount: {
+    type: Number,
+    default: 0
+  },
+  // ₹/point rate actually used at redemption time — snapshotted so historical reports stay
+  // accurate even after Admin changes loyaltyPointsRedemptionRate later.
+  loyaltyRedemptionRateApplied: {
+    type: Number,
+    default: null
+  },
   loyaltyPointsEarned: {
     type: Number,
     default: 0
+  },
+  // Points-per-₹100 / flat-award rates actually used when these points were awarded —
+  // snapshotted the same way, even though loyaltyPointsEarned itself is already frozen once set.
+  loyaltyEarningRateApplied: {
+    type: Number,
+    default: null
+  },
+  loyaltyFixedAwardApplied: {
+    type: Number,
+    default: null
   },
   loyaltyPointsAwarded: {
     type: Boolean,
@@ -542,6 +612,17 @@ const bookingSchema = new mongoose.Schema({
   loyaltyPointsRefunded: {
     type: Boolean,
     default: false
+  },
+  // Guards the cancellation-penalty deduction the same way loyaltyPointsRefunded guards the
+  // refund just above it — previously unguarded, so a hypothetical re-save after cancellation
+  // could deduct the penalty twice.
+  loyaltyPenaltyApplied: {
+    type: Boolean,
+    default: false
+  },
+  loyaltyPenaltyRateApplied: {
+    type: Number,
+    default: null
   },
   referralProcessed: {
     type: Boolean,
@@ -643,8 +724,10 @@ bookingSchema.pre('save', async function (next) {
     }
   }
 
-  // Deduct loyalty points cancellation penalty if booking is cancelled
-  if (this.isModified('status') && this.status === 'cancelled') {
+  // Deduct loyalty points cancellation penalty if booking is cancelled. Guarded by
+  // loyaltyPenaltyApplied — mirrors the loyaltyPointsRefunded guard on the refund block above —
+  // so a hypothetical re-save after cancellation can never deduct the penalty twice.
+  if (this.isModified('status') && this.status === 'cancelled' && !this.loyaltyPenaltyApplied) {
     try {
       const Settings = mongoose.model('Settings');
       const globalSettings = await Settings.findOne({ type: 'global' }).lean();
@@ -672,8 +755,10 @@ bookingSchema.pre('save', async function (next) {
             });
             console.log(`[LoyaltyPoints] Deducted ${penaltyAmount} points from user ${this.userId} as cancellation penalty for booking ${this.bookingNumber}`);
           }
+          this.loyaltyPenaltyRateApplied = cancellationPenalty;
         }
       }
+      this.loyaltyPenaltyApplied = true;
     } catch (err) {
       console.error('[LoyaltyPoints] Error deducting cancellation penalty points in pre-save hook:', err);
     }
@@ -696,12 +781,35 @@ bookingSchema.post('save', async function (doc) {
       if (pointsEarned > 0) {
         await mongoose.model('Booking').findByIdAndUpdate(doc._id, {
           loyaltyPointsEarned: pointsEarned,
-          loyaltyPointsAwarded: true
+          loyaltyPointsAwarded: true,
+          // Snapshot the rates actually used — loyaltyPointsEarned itself is already frozen by
+          // the loyaltyPointsAwarded guard above, but a historical report can't show "this was
+          // earned at 2 pts/₹100" after Admin later changes the rate without this.
+          loyaltyEarningRateApplied: earningRate,
+          loyaltyFixedAwardApplied: fixedAward
         });
 
         const User = mongoose.model('User');
         await User.findByIdAndUpdate(doc.userId, { $inc: { loyaltyPoints: pointsEarned } });
         console.log(`[LoyaltyPoints] Awarded ${pointsEarned} points to user ${doc.userId} for booking ${doc.bookingNumber}`);
+
+        // Ledger entry — redemption/refund/penalty all already create one of these; earning
+        // didn't, which meant loyalty analytics built on Transaction were blind to points issued.
+        try {
+          const Transaction = mongoose.model('Transaction');
+          await Transaction.create({
+            userId: doc.userId,
+            type: 'credit',
+            amount: pointsEarned,
+            status: 'completed',
+            paymentMethod: 'system',
+            description: `Earned ${pointsEarned} Loyalty Points for booking #${doc.bookingNumber}`,
+            bookingId: doc._id,
+            metadata: { type: 'loyalty_points', pointsEarned }
+          });
+        } catch (txErr) {
+          console.error('[LoyaltyPoints] Error creating earn transaction:', txErr);
+        }
 
         // Try creating push/in-app notification
         const { createNotification } = require('../controllers/notificationControllers/notificationController');

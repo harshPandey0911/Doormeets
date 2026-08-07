@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isAdmin } = require('../../middleware/roleMiddleware');
-const { getSettings, updateSettings } = require('../../controllers/adminControllers/settingsController');
+const { getSettings, updateSettings, getLoyaltyAnalytics } = require('../../controllers/adminControllers/settingsController');
 
 const {
   getAllPackagesAdmin,
@@ -17,6 +17,8 @@ router.use(authenticate, isAdmin);
 router.route('/settings')
   .get(getSettings)
   .put(updateSettings);
+
+router.get('/loyalty/analytics', getLoyaltyAnalytics);
 
 router.route('/credit-packages')
   .get(getAllPackagesAdmin)

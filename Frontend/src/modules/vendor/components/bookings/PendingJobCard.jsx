@@ -120,9 +120,12 @@ const PendingJobCard = ({ booking, onAccept, onReject, onClick, loadingAction, s
             </p>
           </div>
           <div className="flex flex-col items-center shrink-0">
-            {booking.categoryIcon || booking.serviceId?.category?.icon ? (
+            {/* booking.serviceId?.category?.icon was never a real path (serviceId is only
+                populated with title/iconUrl) — it always fell through to the bell icon.
+                serviceId.iconUrl is the actual per-service image. */}
+            {booking.categoryIcon || booking.serviceId?.iconUrl ? (
               <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shadow-sm flex items-center justify-center p-0.5">
-                <img src={booking.categoryIcon || booking.serviceId?.category?.icon} className="max-w-full max-h-full object-contain" alt="Category" />
+                <img src={booking.categoryIcon || booking.serviceId?.iconUrl} className="max-w-full max-h-full object-contain" alt="Category" />
               </div>
             ) : (
               <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center">

@@ -44,8 +44,13 @@ async function processBookingCompletion(bookingId) {
     const settings = await Settings.findOne({ type: 'global' });
     const commissionPct = settings && settings.commissionPercentage !== undefined ? settings.commissionPercentage : 20;
 
-    // 2. Determine base amount to calculate commission on (finalAmount / Grand Total)
-    const amount = Number(booking.finalAmount || booking.basePrice || 0);
+    // 2. Determine base amount to calculate commission on. Prefer originalAmount (the pre-promo
+    // total) so a promo discount can never bleed into vendor-share percentage math in the
+    // fallback branches below — it must only ever reduce the platform's own margin, computed
+    // separately at the end of this function. Bookings created before this field existed have no
+    // originalAmount, so this falls through to finalAmount exactly as before — fully backward
+    // compatible.
+    const amount = Number(booking.originalAmount || booking.finalAmount || booking.basePrice || 0);
 
     // 3. Compute Splits (Use custom Price Matrix if configured, otherwise fallback to percentage split)
     let adminCommission = 0;
@@ -289,6 +294,17 @@ async function processBookingCompletion(bookingId) {
     booking.adminMarginGst = adminMarginGst;
     booking.adminMarginNet = adminMarginNet;
     booking.vendorShare = vendorShare;
+
+    // Promo Discount and Loyalty Points Redemption are both Platform Marketing Expense. Applied
+    // HERE, once, centrally — after vendorShare/adminMarginNet have already been computed above
+    // (against `amount`, which prefers booking.originalAmount — a total that already excludes
+    // both discount types, see userBookingController.js) without any awareness of either
+    // discount — so they can only ever reduce the platform's own profit, never vendor earnings,
+    // never GST, never the commission calculation itself.
+    const promoDiscountAmount = Number(booking.promoDiscountAmount) || 0;
+    const loyaltyDiscountAmount = Number(booking.loyaltyDiscountAmount) || 0;
+    booking.platformCommission = adminMarginNet;
+    booking.platformProfit = parseFloat((adminMarginNet - promoDiscountAmount - loyaltyDiscountAmount).toFixed(2));
 
     // 4. Map paymentMethod and set status values
     const originalMethod = (booking.paymentMethod || '').toLowerCase();

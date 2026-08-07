@@ -669,6 +669,72 @@ const getRevenueBreakdown = async (req, res) => {
 };
 
 /**
+ * Monthly Financial Report — Promo-aware
+ * ────────────────────────────────────────
+ * Unlike getFinanceOverview/getRevenueReport (which lean on the PlatformEarning daily-rollup
+ * model, or a rough 20% commission estimate), this reads the actual stored per-booking fields
+ * directly, since those are the only place promo/platform-profit figures live. Built as its own
+ * additive endpoint rather than touching the PlatformEarning pipeline.
+ * GET /api/admin/reports/monthly-promo?months=6
+ */
+const getMonthlyPromoReport = async (req, res) => {
+  try {
+    const monthsBack = Math.min(24, Math.max(1, parseInt(req.query.months) || 6));
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - (monthsBack - 1));
+    startDate.setDate(1);
+    startDate.setHours(0, 0, 0, 0);
+
+    const bookingMatch = await getBookingQueryFilter(req.user);
+
+    const monthly = await Booking.aggregate([
+      {
+        $match: {
+          ...bookingMatch,
+          status: BOOKING_STATUS.COMPLETED,
+          completedAt: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m', date: '$completedAt' } },
+          totalRevenue: { $sum: '$finalAmount' },
+          vendorPayout: { $sum: '$vendorShare' },
+          platformCommission: { $sum: '$platformCommission' },
+          promoExpense: { $sum: '$promoDiscountAmount' },
+          netPlatformProfit: { $sum: { $ifNull: ['$platformProfit', '$adminMarginNet'] } },
+          gstCollected: { $sum: '$tax' },
+          ordersWithPromo: { $sum: { $cond: ['$promoApplied', 1, 0] } },
+          ordersWithoutPromo: { $sum: { $cond: ['$promoApplied', 0, 1] } },
+          totalOrders: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } },
+      {
+        $project: {
+          _id: 0,
+          month: '$_id',
+          totalRevenue: { $round: ['$totalRevenue', 2] },
+          vendorPayout: { $round: ['$vendorPayout', 2] },
+          platformCommission: { $round: ['$platformCommission', 2] },
+          promoExpense: { $round: ['$promoExpense', 2] },
+          netPlatformProfit: { $round: ['$netPlatformProfit', 2] },
+          gstCollected: { $round: ['$gstCollected', 2] },
+          ordersWithPromo: 1,
+          ordersWithoutPromo: 1,
+          totalOrders: 1
+        }
+      }
+    ]);
+
+    res.status(200).json({ success: true, data: monthly });
+  } catch (error) {
+    console.error('Monthly promo report error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch monthly promo report' });
+  }
+};
+
+/**
  * Helper to send CSV
  */
 const sendCSV = (res, data, filename) => {
@@ -706,5 +772,6 @@ module.exports = {
   getGSTRReport,
   getTDSReport,
   getCODReport,
-  getRevenueBreakdown
+  getRevenueBreakdown,
+  getMonthlyPromoReport
 };

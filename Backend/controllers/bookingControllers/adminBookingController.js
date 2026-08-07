@@ -326,6 +326,18 @@ const cancelBooking = async (req, res) => {
 
     await booking.save();
 
+    // Release the promo's reserved usage slot — the booking will not be fulfilled either way
+    // (cancelled, or no vendor available), so a customer's/global promo redemption shouldn't be
+    // permanently burned by it.
+    if (booking.promoApplied && booking.promoCodeId) {
+      try {
+        const { releasePromoUsage } = require('../../utils/promoValidator');
+        await releasePromoUsage(booking.promoCodeId);
+      } catch (promoReleaseErr) {
+        console.error('[AdminCancel] Error releasing promo usage:', promoReleaseErr);
+      }
+    }
+
     // Notify user of the status change via socket
     try {
       const io = req.app.get('io');
@@ -750,6 +762,16 @@ const approveCancelBooking = async (req, res) => {
     }
 
     await booking.save();
+
+    // Release the promo's reserved usage slot now that the cancellation is actually finalized.
+    if (booking.promoApplied && booking.promoCodeId) {
+      try {
+        const { releasePromoUsage } = require('../../utils/promoValidator');
+        await releasePromoUsage(booking.promoCodeId);
+      } catch (promoReleaseErr) {
+        console.error('[AdminApproveCancel] Error releasing promo usage:', promoReleaseErr);
+      }
+    }
 
     console.log(`[AdminCancel] Cancellation approved for booking ${booking.bookingNumber}`);
 

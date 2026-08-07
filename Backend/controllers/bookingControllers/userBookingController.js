@@ -52,6 +52,7 @@ const createBooking = async (req, res) => {
       bookingType, // Extract bookingType
       isConsultation,
       promoCode,
+      voucherCode,
       dynamicFields,
       redeemLoyaltyPoints,
       applyWallet,
@@ -474,6 +475,44 @@ const createBooking = async (req, res) => {
       }
     }
 
+    // ─── Promo Code (server-side, re-validated — never trust a discount number from the
+    // client). Kept fully separate from `discount` above (plan-benefit/service-markdown), and
+    // from anything the frontend already computed, so it can never mix with vendor payout / GST
+    // math downstream, and so a stale/tampered client-side amount can never be charged. The
+    // frontend only ever sends `promoCode` for a code that already passed the checkout preview
+    // (`applyPromo`) — a code that's actually a Gift Voucher never reaches here (see
+    // `voucherCode` below), so a validation failure at this point is a genuine error (expired /
+    // limit hit in the few seconds since preview) worth surfacing directly rather than silently
+    // dropping the discount the customer was shown.
+    let promoDiscountAmount = 0;
+    let promoApplied = false;
+    let appliedPromoDoc = null;
+    if (promoCode && !usePlanBenefits) {
+      const { validateAndCalculatePromo, reservePromoUsage, PromoValidationError } = require('../../utils/promoValidator');
+      try {
+        const { promo, discountAmount } = await validateAndCalculatePromo({
+          code: promoCode,
+          basePrice,
+          serviceId,
+          quantity: bookedItems?.length ? bookedItems.reduce((s, i) => s + (i.quantity || 1), 0) : 1
+        });
+        const reserved = await reservePromoUsage(promo._id);
+        if (!reserved) {
+          return res.status(400).json({ success: false, message: 'This promo code just reached its usage limit. Please remove it and try again.' });
+        }
+        promoDiscountAmount = discountAmount;
+        promoApplied = true;
+        appliedPromoDoc = promo;
+        finalAmount = Math.max(0, parseFloat((finalAmount - promoDiscountAmount).toFixed(2)));
+      } catch (promoErr) {
+        if (promoErr instanceof PromoValidationError) {
+          return res.status(400).json({ success: false, message: promoErr.message });
+        }
+        console.error('[CreateBooking] Promo validation error:', promoErr);
+        return res.status(500).json({ success: false, message: 'Failed to validate promo code. Please try again.' });
+      }
+    }
+
     // Calculate Instant Booking Surcharge
     let instantMarkupCharged = 0;
     if (bookingType === 'instant' && paymentMethod !== 'plan_benefit') {
@@ -485,23 +524,41 @@ const createBooking = async (req, res) => {
       }
     }
 
-    // Calculate Loyalty Points Redemption
+    // Calculate Loyalty Points Redemption. Always reads Settings fresh — no hardcoded rate — so
+    // an Admin change to loyaltyPointsRedemptionRate takes effect on the very next booking with
+    // no restart needed.
     let pointsToRedeem = 0;
+    let loyaltyDiscountAmount = 0;
+    let loyaltyRedemptionRateApplied = null;
     if (redeemLoyaltyPoints && (paymentMethod === 'razorpay' || paymentMethod === 'wallet' || paymentMethod === 'online' || paymentMethod === 'pay_at_home' || paymentMethod === 'cash')) {
-      const orderNetValue = Math.max(0, basePrice - discount + tax + visitingCharges);
+      // Use finalAmount as already computed above (post-promo-discount, post-instant-markup) —
+      // NOT a from-scratch recompute of basePrice-discount+tax+visitingCharges, which predates
+      // promo codes and instant markup and would let a customer redeem more points than they
+      // actually still owe.
+      const orderNetValue = Math.max(0, finalAmount);
       const Settings = require('../../models/Settings');
       const globalSettings = await Settings.findOne({ type: 'global' }).lean();
       const redemptionRate = globalSettings?.loyaltyPointsRedemptionRate !== undefined ? globalSettings.loyaltyPointsRedemptionRate : 1;
-      
-      const pointsNeeded = Math.ceil(orderNetValue / redemptionRate);
-      pointsToRedeem = Math.min(user.loyaltyPoints || 0, pointsNeeded);
-      const loyaltyDiscount = pointsToRedeem * redemptionRate;
-      
-      if (pointsToRedeem > 0) {
-        finalAmount = Math.max(0, finalAmount - loyaltyDiscount);
-        user.loyaltyPoints = (user.loyaltyPoints || 0) - pointsToRedeem;
+
+      if (redemptionRate > 0) {
+        const pointsNeeded = Math.ceil(orderNetValue / redemptionRate);
+        pointsToRedeem = Math.min(user.loyaltyPoints || 0, pointsNeeded);
+        loyaltyDiscountAmount = pointsToRedeem * redemptionRate;
+
+        if (pointsToRedeem > 0) {
+          finalAmount = Math.max(0, finalAmount - loyaltyDiscountAmount);
+          user.loyaltyPoints = (user.loyaltyPoints || 0) - pointsToRedeem;
+          loyaltyRedemptionRateApplied = redemptionRate;
+        }
       }
     }
+
+    // What the customer would owe with the promo AND loyalty discount removed, but every other
+    // charge (instant markup, plan/service discount) kept exactly as computed above. Equals
+    // finalAmount whenever neither was applied — safe, backward-compatible default. This is the
+    // figure commissionService.js's fallback commission branches use, so vendor payout/GST stay
+    // blind to both discount types, same guarantee already in place for promo.
+    const originalAmount = parseFloat((finalAmount + promoDiscountAmount + loyaltyDiscountAmount).toFixed(2));
 
     // Generate unique booking number
     const bookingNumber = `BK${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
@@ -642,6 +699,15 @@ const createBooking = async (req, res) => {
       finalAmount,
       userPayableAmount: finalAmount,
       loyaltyPointsRedeemed: pointsToRedeem,
+      loyaltyDiscountAmount,
+      loyaltyRedemptionRateApplied,
+      // Promo code — kept fully separate from `discount` above (see the validation block
+      // earlier in this function). Every field here is 0/null/false whenever no promo was used.
+      promoCodeId: appliedPromoDoc?._id || null,
+      promoCode: appliedPromoDoc?.code || null,
+      promoDiscountAmount,
+      promoApplied,
+      originalAmount,
       address: {
         type: address.type || 'home',
         addressLine1: address.addressLine1,
@@ -783,25 +849,18 @@ const createBooking = async (req, res) => {
           console.error('[CreateBooking] Workflow visits scheduling failed:', schedErr);
         }
 
-        // 3. Process promoCode/voucher
-        if (promoCode) {
-          const upperCode = promoCode.trim().toUpperCase();
-          const PromoCode = require('../../models/PromoCode');
+        // 3. Process gift voucher redemption. PromoCode usage is NOT handled here anymore — it's
+        // reserved atomically and synchronously in the promo validation block above (see
+        // reservePromoUsage), so incrementing it again here would double-count every redemption.
+        if (voucherCode) {
           const Voucher = require('../../models/Voucher');
-
-          // Check if it's a PromoCode
-          const promoResult = await PromoCode.findOneAndUpdate({ code: upperCode }, { $inc: { usageCount: 1 } });
-          if (promoResult) {
-            console.log(`[CreateBooking][bg] Promo code usage count incremented for ${upperCode}`);
-          } else {
-            // Check if it's a Voucher
-            const voucher = await Voucher.findOne({ code: upperCode });
-            if (voucher) {
-              voucher.redeemedBy.push({ userId, redeemedAt: new Date() });
-              voucher.usageCount += 1;
-              await voucher.save();
-              console.log(`[CreateBooking][bg] Gift voucher redemption recorded for ${upperCode}`);
-            }
+          const upperVoucherCode = voucherCode.trim().toUpperCase();
+          const voucher = await Voucher.findOne({ code: upperVoucherCode });
+          if (voucher) {
+            voucher.redeemedBy.push({ userId, redeemedAt: new Date() });
+            voucher.usageCount += 1;
+            await voucher.save();
+            console.log(`[CreateBooking][bg] Gift voucher redemption recorded for ${upperVoucherCode}`);
           }
         }
 
@@ -1457,6 +1516,17 @@ const cancelBooking = async (req, res) => {
     booking.cancellationReason = cancellationReason || 'Cancelled by user';
 
     await booking.save();
+
+    // Release the promo's reserved usage slot — a cancelled order shouldn't permanently burn a
+    // customer's/global promo redemption, same as real marketplaces.
+    if (booking.promoApplied && booking.promoCodeId) {
+      try {
+        const { releasePromoUsage } = require('../../utils/promoValidator');
+        await releasePromoUsage(booking.promoCodeId);
+      } catch (promoReleaseErr) {
+        console.error('[UserCancelBooking] Error releasing promo usage:', promoReleaseErr);
+      }
+    }
 
     // ── REAL-TIME: Notify vendor/worker/all notified vendors via Socket.IO ──
     try {

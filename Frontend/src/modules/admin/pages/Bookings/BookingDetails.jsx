@@ -517,6 +517,18 @@ const BookingDetails = () => {
                   <span className="font-semibold">-{formatCurrency(booking.discount || 0)}</span>
                 </div>
               )}
+              {booking.promoApplied && booking.promoDiscountAmount > 0 && (
+                <div className="flex justify-between text-xs text-red-500">
+                  <span>Promo Discount ({booking.promoCode}):</span>
+                  <span className="font-semibold">-{formatCurrency(booking.promoDiscountAmount || 0)}</span>
+                </div>
+              )}
+              {booking.loyaltyDiscountAmount > 0 && (
+                <div className="flex justify-between text-xs text-red-500">
+                  <span>Loyalty Points Redeemed ({booking.loyaltyPointsRedeemed} pts{booking.loyaltyRedemptionRateApplied ? ` @ ₹${booking.loyaltyRedemptionRateApplied}` : ''}):</span>
+                  <span className="font-semibold">-{formatCurrency(booking.loyaltyDiscountAmount || 0)}</span>
+                </div>
+              )}
               {booking.instantMarkupCharged > 0 && (
                 <div className="flex justify-between text-xs text-amber-700 font-medium">
                   <span>⚡ Instant Booking Fee:</span>
@@ -530,24 +542,61 @@ const BookingDetails = () => {
             </div>
 
             {/* Split Details */}
-            <div className="border-t border-dashed border-gray-200 pt-3 space-y-2 bg-gray-50/70 p-3 rounded-xl text-xs">
-              <div className="flex justify-between text-gray-600 items-center">
-                <span>Admin Commission {booking.isEstimatedSplit ? '(Est. 20%)' : ''}:</span>
-                <span className="font-bold text-gray-900">
-                  {formatCurrency(
-                    booking.adminCommission || booking.commission || (booking.finalAmount ? Math.round(booking.finalAmount * 0.2) : 0)
+            {(() => {
+              const hasDiscount = booking.promoApplied || booking.loyaltyDiscountAmount > 0;
+              return (
+                <div className="border-t border-dashed border-gray-200 pt-3 space-y-2 bg-gray-50/70 p-3 rounded-xl text-xs">
+                  {hasDiscount && (
+                    <div className="flex justify-between text-gray-600 items-center">
+                      <span>Original Amount (pre-discount):</span>
+                      <span className="font-bold text-gray-900">{formatCurrency(booking.originalAmount || 0)}</span>
+                    </div>
                   )}
-                </span>
-              </div>
-              <div className="flex justify-between text-gray-600 items-center">
-                <span>Vendor Earnings {booking.isEstimatedSplit ? '(Est. 80%)' : ''}:</span>
-                <span className="font-bold text-green-700">
-                  {formatCurrency(
-                    booking.vendorEarnings || booking.vendorShare || (booking.finalAmount ? booking.finalAmount - Math.round(booking.finalAmount * 0.2) : 0)
+                  <div className="flex justify-between text-gray-600 items-center">
+                    <span>Admin Commission {booking.isEstimatedSplit ? '(Est. 20%)' : ''}:</span>
+                    <span className="font-bold text-gray-900">
+                      {formatCurrency(
+                        booking.adminCommission || booking.commission || (booking.finalAmount ? Math.round(booking.finalAmount * 0.2) : 0)
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-gray-600 items-center">
+                    <span>Vendor Earnings {booking.isEstimatedSplit ? '(Est. 80%)' : ''}:</span>
+                    <span className="font-bold text-green-700">
+                      {formatCurrency(
+                        booking.vendorEarnings || booking.vendorShare || (booking.finalAmount ? booking.finalAmount - Math.round(booking.finalAmount * 0.2) : 0)
+                      )}
+                    </span>
+                  </div>
+                  {hasDiscount && (
+                    <>
+                      <div className="flex justify-between text-gray-600 items-center pt-2 border-t border-dashed border-gray-200">
+                        <span>Platform Commission:</span>
+                        <span className="font-bold text-gray-900">{formatCurrency(booking.platformCommission || booking.adminMarginNet || 0)}</span>
+                      </div>
+                      {booking.promoApplied && booking.promoDiscountAmount > 0 && (
+                        <div className="flex justify-between text-red-500 items-center">
+                          <span>− Promo Discount (Marketing Expense):</span>
+                          <span className="font-semibold">-{formatCurrency(booking.promoDiscountAmount || 0)}</span>
+                        </div>
+                      )}
+                      {booking.loyaltyDiscountAmount > 0 && (
+                        <div className="flex justify-between text-red-500 items-center">
+                          <span>− Loyalty Redemption (Marketing Expense):</span>
+                          <span className="font-semibold">-{formatCurrency(booking.loyaltyDiscountAmount || 0)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center font-bold">
+                        <span className="text-gray-800">= Platform Profit:</span>
+                        <span className={booking.platformProfit >= 0 ? 'text-green-700' : 'text-red-600'}>
+                          {formatCurrency(booking.platformProfit || 0)}
+                        </span>
+                      </div>
+                    </>
                   )}
-                </span>
-              </div>
-            </div>
+                </div>
+              );
+            })()}
 
             {/* Payment Meta */}
             <div className="pt-2 grid grid-cols-2 gap-2 text-xs">

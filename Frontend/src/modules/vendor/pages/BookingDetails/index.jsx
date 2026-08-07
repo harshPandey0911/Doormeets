@@ -784,6 +784,14 @@ export default function BookingDetails() {
         tax: parseFloat(apiData.tax || (apiData.paymentMethod === 'plan_benefit' ? (apiData.basePrice || 0) * 0.18 : 0)),
         visitingCharges: parseFloat(apiData.visitingCharges || apiData.visitationFee || (apiData.paymentMethod === 'plan_benefit' ? 49 : 0)),
         discount: parseFloat(apiData.discount || 0),
+        // Promo codes and loyalty point redemption are always Platform Marketing Expense — never
+        // deducted from vendor earnings below, which read from vendorTotalEarning/vendorEarnings
+        // exactly as before.
+        promoApplied: !!apiData.promoApplied,
+        promoCode: apiData.promoCode || null,
+        promoDiscountAmount: parseFloat(apiData.promoDiscountAmount || 0),
+        loyaltyPointsRedeemed: parseFloat(apiData.loyaltyPointsRedeemed || 0),
+        loyaltyDiscountAmount: parseFloat(apiData.loyaltyDiscountAmount || 0),
         platformCommission: parseFloat(apiData.adminCommission || apiData.platformFee || apiData.commission || 0),
         finalAmount: parseFloat(apiData.finalAmount || 0),
         vendorEarnings: parseFloat(
@@ -2184,6 +2192,26 @@ export default function BookingDetails() {
                                             </div>
                                           )}
 
+                                          {booking.promoApplied && booking.promoDiscountAmount > 0 && (
+                                            <div className="flex justify-between items-center bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-1.5 mt-1">
+                                              <div className="flex flex-col">
+                                                <span className="text-indigo-700 font-semibold">Promo {booking.promoCode}</span>
+                                                <span className="text-[9px] text-indigo-400 font-bold uppercase tracking-wide">Sponsored by Platform</span>
+                                              </div>
+                                              <span className="font-medium text-indigo-600">-₹{Math.abs(booking.promoDiscountAmount).toFixed(2)}</span>
+                                            </div>
+                                          )}
+
+                                          {booking.loyaltyDiscountAmount > 0 && (
+                                            <div className="flex justify-between items-center bg-violet-50 border border-violet-100 rounded-lg px-2 py-1.5 mt-1">
+                                              <div className="flex flex-col">
+                                                <span className="text-violet-700 font-semibold">Loyalty Points ({booking.loyaltyPointsRedeemed} pts)</span>
+                                                <span className="text-[9px] text-violet-400 font-bold uppercase tracking-wide">Sponsored by Platform</span>
+                                              </div>
+                                              <span className="font-medium text-violet-600">-₹{Math.abs(booking.loyaltyDiscountAmount).toFixed(2)}</span>
+                                            </div>
+                                          )}
+
                                           <div className="flex justify-between items-center pt-2 mt-1 border-t border-gray-100 text-xs">
                                             <span className="font-bold text-gray-900">Grand Total</span>
                                             <span className="font-black text-sm" style={{ color: themeColors.button }}>
@@ -2548,6 +2576,18 @@ export default function BookingDetails() {
                                              <div className="flex items-center justify-between py-0.5">
                                                <span className="text-[10px] text-green-600">Discount Applied</span>
                                                <span className="text-[10px] font-medium text-green-600">-₹{Math.abs(booking.discount).toFixed(2)}</span>
+                                             </div>
+                                           )}
+                                           {booking.promoApplied && booking.promoDiscountAmount > 0 && (
+                                             <div className="flex items-center justify-between py-0.5">
+                                               <span className="text-[10px] text-indigo-600">Promo {booking.promoCode} <span className="text-indigo-300">(Sponsored by Platform)</span></span>
+                                               <span className="text-[10px] font-medium text-indigo-600">-₹{Math.abs(booking.promoDiscountAmount).toFixed(2)}</span>
+                                             </div>
+                                           )}
+                                           {booking.loyaltyDiscountAmount > 0 && (
+                                             <div className="flex items-center justify-between py-0.5">
+                                               <span className="text-[10px] text-violet-600">Loyalty {booking.loyaltyPointsRedeemed} pts <span className="text-violet-300">(Sponsored by Platform)</span></span>
+                                               <span className="text-[10px] font-medium text-violet-600">-₹{Math.abs(booking.loyaltyDiscountAmount).toFixed(2)}</span>
                                              </div>
                                            )}
                                          </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiGift, FiSave, FiInfo, FiTrendingUp, FiDollarSign, FiSlash, FiAward } from 'react-icons/fi';
-import { getSettings, updateSettings } from '../../../services/settingsService';
+import { FiGift, FiSave, FiInfo, FiTrendingUp, FiDollarSign, FiSlash, FiAward, FiBarChart2 } from 'react-icons/fi';
+import { getSettings, updateSettings, getLoyaltyAnalytics } from '../../../services/settingsService';
 import { toast } from 'react-hot-toast';
 
 const LoyaltyPointsConfig = () => {
@@ -13,6 +13,8 @@ const LoyaltyPointsConfig = () => {
     loyaltyPointsCancellationPenalty: 0,
     loyaltyPointsFixedCompletionAward: 0,
   });
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
   useEffect(() => {
     const fetchLoyaltySettings = async () => {
@@ -36,7 +38,22 @@ const LoyaltyPointsConfig = () => {
     };
 
     fetchLoyaltySettings();
+    fetchAnalytics();
   }, []);
+
+  // Computed fresh from the Transaction ledger on every load — no caching — so it always
+  // reflects the latest earn/redeem/refund/penalty activity.
+  const fetchAnalytics = async () => {
+    try {
+      setAnalyticsLoading(true);
+      const res = await getLoyaltyAnalytics();
+      if (res.success) setAnalytics(res.data);
+    } catch (err) {
+      console.error('Error fetching loyalty analytics:', err);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -94,6 +111,37 @@ const LoyaltyPointsConfig = () => {
             <FiGift className="w-10 h-10 text-white animate-bounce" />
           </div>
         </div>
+      </div>
+
+      {/* Analytics Panel — live from the Transaction ledger, no caching */}
+      <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <FiBarChart2 className="w-5 h-5 text-violet-600" />
+          <h2 className="font-bold text-gray-800 text-lg">Loyalty Analytics</h2>
+        </div>
+        {analyticsLoading ? (
+          <div className="text-sm text-gray-400 py-4">Loading analytics...</div>
+        ) : !analytics ? (
+          <div className="text-sm text-gray-400 py-4">No data available.</div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: 'Total Points Issued', value: analytics.totalPointsIssued, color: 'text-emerald-600' },
+              { label: 'Total Points Redeemed', value: analytics.totalPointsRedeemed, color: 'text-amber-600' },
+              { label: 'Redemption Value Given', value: `₹${analytics.totalRedemptionValueGiven}`, color: 'text-amber-600' },
+              { label: 'Points Refunded', value: analytics.totalPointsRefunded, color: 'text-blue-600' },
+              { label: 'Penalty Points Deducted', value: analytics.totalPenaltyPointsDeducted, color: 'text-rose-600' },
+              { label: 'Outstanding Balance (all users)', value: analytics.totalOutstandingBalance, color: 'text-violet-600' },
+              { label: 'Earn Transactions', value: analytics.totalEarnTransactions, color: 'text-gray-700' },
+              { label: 'Redeem Transactions', value: analytics.totalRedeemTransactions, color: 'text-gray-700' }
+            ].map(stat => (
+              <div key={stat.label} className="bg-gray-50 border border-gray-100 rounded-xl p-4">
+                <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wide">{stat.label}</p>
+                <p className={`text-lg font-black mt-1 ${stat.color}`}>{stat.value}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Main Settings Form */}
